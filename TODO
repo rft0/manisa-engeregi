@@ -1,0 +1,20 @@
+# MANISA ENGEREGI
+
+program     → stmt*
+stmt        → expr_stmt | if_stmt | while_stmt | block | return_stmt | method_decl
+expr_stmt   → expr TOKEN_LF
+block       → '{' stmt* '}'
+if_stmt     → 'if' '(' expr ')' stmt ( 'else' stmt )?
+while_stmt  → 'while' '(' expr ')' stmt
+return_stmt → 'return' expr TOKEN_LF
+expr        → assignment
+assignment  → IDENTIFIER '=' expr
+            | logic_or
+logic_or    → logic_and ( '||' logic_and )*
+logic_and   → equality ( '&&' equality )*
+equality    → comparison ( ('==' | '!=') comparison )*
+comparison  → term ( ('<' | '<=' | '>' | '>=') term )*
+term        → factor ( ('+' | '-') factor )*
+factor      → unary ( ('*' | '/' | '%') unary )*
+unary       → ('-' | '!') unary | primary
+primary     → NUMBER | STRING | IDENTIFIER | '(' expr ')'

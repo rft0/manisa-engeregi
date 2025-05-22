@@ -1,0 +1,53 @@
+<program> ::= <stmt>*
+
+<stmt> ::= <if_stmt>
+| <while_stmt>
+| <block>
+| <method_decl>
+| <return_stmt>
+| <break_stmt>
+| <continue_stmt>
+| <expr_stmt>
+
+<expr_stmt> ::= <expr> "\n"
+<if_stmt> ::= "if" "(" <expr> ")" <stmt> ["else" <stmt>]
+<while_stmt> ::= "while" "(" <expr> ")" <stmt>
+<block> ::= "{" <stmt>* "}"
+<method_decl> ::= "method" IDENTIFIER "(" [<parameters>] ")" <block>
+<parameters> ::= IDENTIFIER ("," IDENTIFIER)*
+<return_stmt> ::= "return" [<expr>] "\n"
+<break_stmt> ::= "break" "\n"
+<continue_stmt> ::= "continue" "\n"
+
+# Expressions
+<expr> ::= <assignment>
+<assignment> ::= <logical_or> ( ("=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "~=") <assignment> )?
+<logical_or> ::= <logical_and> ("||" <logical_and>)*
+<logical_and> ::= <equality> ("&&" <equality>)*
+<equality> ::= <comparison> (("==" | "!=") <comparison>)*
+<comparison> ::= <bitwise_or> (("<" | "<=" | ">" | ">=") <bitwise_or>)*
+<bitwise_or> ::= <bitwise_xor> ("|" <bitwise_xor>)*
+<bitwise_xor> ::= <bitwise_and> ("^" <bitwise_and>)*
+<bitwise_and> ::= <shift> ("&" <shift>)*
+<shift> ::= <term> (("<<" | ">>") <term>)*
+<term> ::= <factor> (("+" | "-") <factor>)*
+<factor> ::= <unary> (("" | "/" | "%") <unary>)
+<unary> ::= ("-" | "!" | "~" | "not") <unary>
+| <postfix>
+<postfix> ::= <primary> ("++" | "--")?
+<primary> ::= IDENTIFIER
+| IDENTIFIER "(" [<arguments>] ")"
+| INTEGER
+| FLOAT
+| STRING
+| "(" <expr> ")"
+<arguments> ::= <expr> ("," <expr>)*
+Terminals (Tokens)
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+INTEGER ::= [0-9]+
+FLOAT ::= [0-9]+.[0-9]+
+STRING ::= """ .* """
+NEWLINE ::= "\n"
+Comments (not processed by parser)
+COMMENT ::= # .* NEWLINE
+| /* .* */
