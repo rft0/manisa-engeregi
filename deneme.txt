@@ -1,4 +1,4 @@
-# sabit a = 3;
+# sabit a = 3
 marifet asd(a) {
     şayet ((a = 5) && a == 5) {
         ;;;;;;;;
