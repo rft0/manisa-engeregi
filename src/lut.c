@@ -1,5 +1,4 @@
 #include "lut.h"
-#include "parser/node.h"
 
 #define KW_CONST        "sabit"
 #define KW_LET          "değişken"

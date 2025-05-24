@@ -9,16 +9,6 @@
 
 #include "../diag/diag.h"
 
-#include "node.h"
-
-/*
--- Things to check:
-    - Check for undeclared variables
-    - Check for variable shadowing is okay if a variable is shadowed inside a function we will use local one
-    - Check for function argument arity
-    - Check use of return, continue, break
-*/
-
 typedef struct Symbol {
     StringView name;
     int is_const;
@@ -51,7 +41,6 @@ typedef struct Analyser {
 } Analyser;
 
 // Forward decls
-
 static void analyser_init(Analyser* analyser, const char* filename, Stmt** stmts);
 
 static void analyse_stmt(Analyser* analyser, Stmt* stmt);
@@ -76,8 +65,6 @@ static void symbol_free(Symbol* symbol);
 static Symbol* scope_lookup(Scope* scope, StringView name);
 static Symbol* scope_lookup_current(Scope* scope, StringView name);
 static int scope_define(Scope* scope, Symbol* symbol);
-
-// ---
 
 static void analyser_init(Analyser* analyser, const char* filename, Stmt** stmts) {
     analyser->filename = filename;
@@ -108,8 +95,8 @@ void symbol_free_iter(const void* key, size_t key_len, uintptr_t value, void* us
 void symbol_print_iter(const void* key, size_t key_len, uintptr_t value, void* user_data) {
     Symbol* symbol = (Symbol*)value;
     printf("Symbol: %.*s (const: %d, initialized: %d, line: %d, col: %d)\n",
-           (int)key_len, (const char*)key, symbol->is_const, symbol->is_initialized,
-           symbol->line, symbol->col);
+        (int)key_len, (const char*)key, symbol->is_const, symbol->is_initialized,
+        symbol->line, symbol->col);
 }
 
 static void scope_free(Scope* scope) {
@@ -204,24 +191,21 @@ static void analyse_expr_stmt(Analyser* analyser, Stmt* stmt) {
 static void analyse_if(Analyser* analyser, Stmt* stmt) {
     analyse_expr(analyser, stmt->if_stmt->condition, 1);
     
-    // Analyze then branch
-    for (int i = 0; i < darray_size(stmt->if_stmt->then_branch); i++) {
+    for (int i = 0; i < darray_size(stmt->if_stmt->then_branch); i++)
         analyse_stmt(analyser, stmt->if_stmt->then_branch[i]);
-    }
     
-    // Analyze else branch if present
-    if (stmt->if_stmt->else_branch) {
+    if (stmt->if_stmt->else_branch)
         analyse_stmt(analyser, stmt->if_stmt->else_branch);
-    }
 }
 
 static void analyse_while(Analyser* analyser, Stmt* stmt) {
     analyse_expr(analyser, stmt->while_stmt->condition, 1);
     
     analyser->inside_loop++;
-    for (int i = 0; darray_size(stmt->while_stmt->body); i++) {
+
+    for (int i = 0; i < darray_size(stmt->while_stmt->body); i++)
         analyse_stmt(analyser, stmt->while_stmt->body[i]);
-    }
+
     analyser->inside_loop--;
 }
 

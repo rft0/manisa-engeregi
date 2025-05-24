@@ -37,13 +37,36 @@ int main() {
     
     analyse(filename, stmts);
 
-    // Byte code generation here
+    if (diags_errs_size() > 0) {
+        
+        diags_dump();
+        diags_free();
+        lut_free();
+        
+        darray_for(tokens) free(tokens[__i]);
+        darray_free(tokens);
+
+        darray_for(stmts) free(stmts[__i]);
+        darray_free(stmts);
+
+        free(src);
+
+        fprintf(stderr, "Compilation failed due to errors.\n");
+
+        return 1;
+    }
+
+    diags_free();
+
+    // Byte code generation here after bytecode generation we can free the tokens and stmts
 
     darray_for(tokens) free(tokens[__i]);
     darray_free(tokens);
 
     darray_for(stmts) free(stmts[__i]);
     darray_free(stmts);
+
+    // VM execution here
 
     diags_dump();
     diags_free();

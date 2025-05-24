@@ -2,7 +2,7 @@
 #define __PARSER_H
 
 #include "token.h"
-#include "node.h"
+#include "stmt.h"
 
 Stmt** parse(const char* filename, Token** tokens);
 

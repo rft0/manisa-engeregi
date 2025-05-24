@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <setjmp.h>
 
-#include "node.h"
-
 #include "../utils/darray.h"
 #include "../diag/diag.h"
 #include "../lut.h"

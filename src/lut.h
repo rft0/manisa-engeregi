@@ -3,7 +3,7 @@
 
 #include "utils/hashmap.h"
 #include "parser/token.h"
-#include "parser/node.h"
+#include "parser/stmt.h"
 
 extern HashMap* lut_kw_to_token;
 
