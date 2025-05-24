@@ -1,5 +1,5 @@
-#ifndef __ANALYSE_H
-#define __ANALYSE_H
+#ifndef __ANALYSER_H
+#define __ANALYSER_H
 
 #include "stmt.h"
 

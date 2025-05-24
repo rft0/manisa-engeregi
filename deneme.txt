@@ -1,6 +1,14 @@
+# declarations in condition has errors fix 'em
+sabit a = 3;
 marifet asd(a) {
+    şayet ((a = 5) && a == 5) {
+        ;;;;;;;;
+    }
+
     değişken b = a + 5;
-    b = 5;
+    5 = 1;
+    c = 5;
     b += none;
     b == 5;
+    b <= 3 <= 4;
 }

@@ -1,7 +1,5 @@
 #include "parser.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <setjmp.h>
 
 #include "../utils/darray.h"
@@ -133,15 +131,17 @@ static Expr* parse_assignment(Parser* parser) {
         parser_match(parser, TOKEN_ASSIGN_BIT_AND)  ||
         parser_match(parser, TOKEN_ASSIGN_BIT_OR)   ||
         parser_match(parser, TOKEN_ASSIGN_BIT_XOR)  ||
-        parser_match(parser, TOKEN_ASSIGN_BIT_NOT)){
+        parser_match(parser, TOKEN_ASSIGN_BIT_NOT)) {
         
         Token* op = parser->tokens[parser->index - 1];
-        Expr* value = parse_assignment(parser);  // Right associative
         
         if (expr->kind != EXPR_VARIABLE) {
-            fprintf(stderr, "Invalid assignment target at line %d, col %d\n", expr->line, expr->col);
-            exit(1);
+            diags_new_diag(DIAG_PARSER, DIAG_ERROR, parser->filename, parser->c->line, parser->c->col, "Invalid assignment target, expected a variable");
+            parse_assignment(parser); // This is for consuming needless tokens
+            return expr;
         }
+
+        Expr* value = parse_assignment(parser);
         
         if (op->type == TOKEN_ASSIGN)
             return expr_new_binary(BIN_ASSIGN, expr, value, expr->line, expr->col);
@@ -248,8 +248,10 @@ static Expr* parse_comparison(Parser* parser) {
                 binop = BIN_GTE;
                 break;
             default:
-                fprintf(stderr, "Unknown comparison operator at line %d, col %d\n", op->line, op->col);
-                exit(1);
+                // diags_new_diag(DIAG_PARSER, DIAG_ERROR, parser->filename, parser->c->line, parser->c->col, "Unexpected token in expression");
+                // parser_sync(parser);
+                // longjmp(parser->loop_jmp, 1);
+                break;
         }
         
         expr = expr_new_binary(binop, expr, right, expr->line, expr->col);
@@ -310,8 +312,7 @@ static Expr* parse_factor(Parser* parser) {
                 binop = BIN_MOD;
                 break;
             default:
-                fprintf(stderr, "Unknown factor operator at line %d, col %d\n", op->line, op->col);
-                exit(1);
+                break;
         }
         
         expr = expr_new_binary(binop, expr, right, expr->line, expr->col);
@@ -354,8 +355,7 @@ static Expr* parse_unary(Parser* parser) {
                 unary_op = UNARY_PRE_DEC;
                 break;
             default:
-                fprintf(stderr, "Unknown unary operator at line %d, col %d\n", op->line, op->col);
-                exit(1);
+                break;
         }
         
         return expr_new_unary(unary_op, right, op->line, op->col);
