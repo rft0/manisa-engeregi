@@ -22,6 +22,7 @@ typedef enum {
     TOKEN_LIT_STRING,
     TOKEN_LIT_INTEGER,
     TOKEN_LIT_FLOAT,
+    TOKEN_LIT_NONE,
 
     // Arithmetic Operators
     TOKEN_OP_ADD,

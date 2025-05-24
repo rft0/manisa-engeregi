@@ -107,6 +107,7 @@ static Token* get_string(Lexer* lexer) {
     sv.byte_len = 0;
     sv.len = 0;
 
+    //! TODO: Handle escape sequences in strings
     while (*lexer->c != '"' && *lexer->c != '\0' && *lexer->c != '\n' && *lexer->c != '\r') {
         sv.byte_len += lexer->c_len;
         sv.len++;

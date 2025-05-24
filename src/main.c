@@ -10,6 +10,7 @@
 
 #include "parser/lexer.h"
 #include "parser/parser.h"
+#include "parser/analyser.h"
 
 int main() {
     const char* filename = "deneme.txt";
@@ -24,15 +25,19 @@ int main() {
         free(src);
         return 1;
     }
-        
+
     diags_init();
     lut_init();
     
     Token** tokens = lex(filename, src);
-    darray_for(tokens) token_dump(tokens[__i]);
+    // darray_for(tokens) token_dump(tokens[__i]);
 
     Stmt** stmts = parse(filename, tokens);
     darray_for(stmts) stmt_dump(stmts[__i]);
+    
+    analyse(filename, stmts);
+
+    // Byte code generation here
 
     darray_for(tokens) free(tokens[__i]);
     darray_free(tokens);

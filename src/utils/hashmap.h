@@ -13,6 +13,9 @@ HashMap* hashmap_new();
 int hashmap_get(HashMap* map, const void* key, size_t key_len, uintptr_t* out);
 int hashmap_set(HashMap* map, const void* key, size_t key_len, uintptr_t value);
 
+typedef void (*hashmap_iterate_fn)(const void* key, size_t key_len, uintptr_t value, void* user_data);
+void hashmap_iterate(HashMap* map, hashmap_iterate_fn fn, void* user_data);
+
 void hashmap_free(HashMap* map);
 
 

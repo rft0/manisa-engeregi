@@ -119,6 +119,18 @@ int hashmap_set(HashMap* map, const void* key, size_t key_len, uintptr_t value) 
     return 0;
 }
 
+void hashmap_iterate(HashMap* map, hashmap_iterate_fn fn, void* user_data) {
+    if (!map || !fn)
+        return;
+    
+    for (size_t i = 0; i < map->capacity; i++) {
+        HashEntry* entry = &map->entries[i];
+        if (entry->key) {
+            fn(entry->key, entry->key_len, entry->value, user_data);
+        }
+    }
+}
+
 void hashmap_free(HashMap* map) {
     free(map->entries);
     free(map);

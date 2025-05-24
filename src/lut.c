@@ -1,4 +1,5 @@
 #include "lut.h"
+#include "parser/node.h"
 
 #define KW_CONST        "sabit"
 #define KW_LET          "değişken"
@@ -11,6 +12,7 @@
 #define KW_RETURN       "tebliğ"
 #define KW_BREAK        "yeter"
 #define KW_CONTINUE     "devam"
+#define KW_NONE         "none"
 
 HashMap* lut_kw_to_token = NULL;
 
@@ -28,6 +30,7 @@ void lut_init() {
     hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_RETURN), TOKEN_KW_RETURN);
     hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_BREAK), TOKEN_KW_BREAK);
     hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_CONTINUE), TOKEN_KW_CONTINUE);
+    hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_NONE), TOKEN_LIT_NONE);
 }
 
 void lut_free() {
@@ -57,6 +60,7 @@ const char* lut_token_to_str[] = {
     [TOKEN_LIT_STRING] = "LIT_STRING",
     [TOKEN_LIT_INTEGER] = "LIT_INTEGER",
     [TOKEN_LIT_FLOAT] = "LIT_FLOAT",
+    [TOKEN_LIT_NONE] = "LIT_NONE",
 
     // Arithmetic Operators
     [TOKEN_OP_ADD] = "OP_ADD",
@@ -141,7 +145,7 @@ BinaryOp lut_token_to_binop[] = {
 
 // Create lut for assignment operators
 int lut_assignment_ops[] = {
-    [TOKEN_ASSIGN] = BIN_ADD,
+    [TOKEN_ASSIGN] = BIN_EQ,
     [TOKEN_ASSIGN_ADD] = BIN_ADD,
     [TOKEN_ASSIGN_SUB] = BIN_SUB,
     [TOKEN_ASSIGN_MUL] = BIN_MUL,
@@ -150,4 +154,16 @@ int lut_assignment_ops[] = {
     [TOKEN_ASSIGN_BIT_AND] = BIN_BIT_AND,
     [TOKEN_ASSIGN_BIT_OR] = BIN_BIT_OR,
     [TOKEN_ASSIGN_BIT_XOR] = BIN_BIT_XOR,
+};
+
+BinaryOp lut_compound_to_binop[] = {
+    [TOKEN_ASSIGN_ADD] = BIN_ADD,
+    [TOKEN_ASSIGN_SUB] = BIN_SUB,
+    [TOKEN_ASSIGN_MUL] = BIN_MUL,
+    [TOKEN_ASSIGN_DIV] = BIN_DIV,
+    [TOKEN_ASSIGN_MOD] = BIN_MOD,
+    [TOKEN_ASSIGN_BIT_AND] = BIN_BIT_AND,
+    [TOKEN_ASSIGN_BIT_OR] = BIN_BIT_OR,
+    [TOKEN_ASSIGN_BIT_XOR] = BIN_BIT_XOR,
+    [TOKEN_ASSIGN_BIT_NOT] = BIN_BIT_NOT,
 };

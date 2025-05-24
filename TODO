@@ -1,5 +1,7 @@
 # MANISA ENGEREGI
 
+* ANOTHER NOTE TO MYSELF: THERE IS A FUCKING PROBLEM WHILE PARSING ASSIGNMENT / COMPOUND ASSIGNMENT OPERATORS PARSE_EXPR AT BINARY OPS FIX IT.
+
 program     → stmt*
 stmt        → expr_stmt | if_stmt | while_stmt | block | return_stmt | method_decl
 expr_stmt   → expr TOKEN_LF

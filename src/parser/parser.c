@@ -4,9 +4,12 @@
 #include <stdlib.h>
 #include <setjmp.h>
 
-#include "../utils/darray.h"
+#include "node.h"
 
+#include "../utils/darray.h"
 #include "../diag/diag.h"
+#include "../lut.h"
+
 
 typedef struct _Parser {
     const char* filename; 
@@ -17,40 +20,40 @@ typedef struct _Parser {
 } Parser;
 
 // Forward decls
-Expr* parse_expr(Parser* parser);
-Expr* parse_assignment(Parser* parser);
-Expr* parse_logical_or(Parser* parser);
-Expr* parse_logical_and(Parser* parser);
-Expr* parse_bitwise_or(Parser* parser);
-Expr* parse_bitwise_xor(Parser* parser);
-Expr* parse_bitwise_and(Parser* parser);
-Expr* parse_equality(Parser* parser);
-Expr* parse_comparison(Parser* parser);
-Expr* parse_bitshift(Parser* parser);
-Expr* parse_term(Parser* parser);
-Expr* parse_factor(Parser* parser);
-Expr* parse_unary(Parser* parser);
-Expr* parse_postfix(Parser* parser);
-Expr* parse_primary(Parser* parser);
+static Expr* parse_expr(Parser* parser);
+static Expr* parse_assignment(Parser* parser);
+static Expr* parse_logical_or(Parser* parser);
+static Expr* parse_logical_and(Parser* parser);
+static Expr* parse_bitwise_or(Parser* parser);
+static Expr* parse_bitwise_xor(Parser* parser);
+static Expr* parse_bitwise_and(Parser* parser);
+static Expr* parse_equality(Parser* parser);
+static Expr* parse_comparison(Parser* parser);
+static Expr* parse_bitshift(Parser* parser);
+static Expr* parse_term(Parser* parser);
+static Expr* parse_factor(Parser* parser);
+static Expr* parse_unary(Parser* parser);
+static Expr* parse_postfix(Parser* parser);
+static Expr* parse_primary(Parser* parser);
 
-Stmt* parse_stmt(Parser* parser);
-Stmt* parse_if(Parser* parser);
-Stmt* parse_while(Parser* parser);
-Stmt* parse_while(Parser* parser);
-Stmt* parse_decl(Parser* parser);
-Stmt* parse_compound(Parser* parser);
+static Stmt* parse_stmt(Parser* parser);
+static Stmt* parse_if(Parser* parser);
+static Stmt* parse_while(Parser* parser);
+static Stmt* parse_while(Parser* parser);
+static Stmt* parse_decl(Parser* parser);
+static Stmt* parse_compound(Parser* parser);
 
 // Helper functions
-void parser_advance(Parser* parser) {
+static void parser_advance(Parser* parser) {
     parser->index++;
     parser->c = parser->tokens[parser->index];
 }
 
-Token* parser_peek(Parser* parser) {
+static Token* parser_peek(Parser* parser) {
     return parser->tokens[parser->index + 1];
 }
 
-int parser_match(Parser* parser, TokenType type) {
+static int parser_match(Parser* parser, TokenType type) {
     if (parser->c && parser->c->type == type) {
         parser_advance(parser);
         return 1;
@@ -59,43 +62,48 @@ int parser_match(Parser* parser, TokenType type) {
     return 0;
 }
 
-int parser_check(Parser* parser, TokenType type) {
+static int parser_check(Parser* parser, TokenType type) {
     if (!parser->c) return 0;
     return parser->c->type == type;
 }
 
-void parser_expect(Parser* parser, TokenType type, const char* msg) {
+static void parser_sync(Parser* parser) {
+    // Skip tokens until we find a statement terminator or a known sync point
+    while (parser->c && parser->c->type != TOKEN_EOF) {
+        if (parser->index > 0 && parser->tokens[parser->index - 1]->type == TOKEN_SEMI)
+            longjmp(parser->loop_jmp, 1);
+        
+        switch (parser->c->type) {
+            case TOKEN_KW_LET:
+            case TOKEN_KW_CONST:
+            case TOKEN_KW_IF:
+            case TOKEN_KW_WHILE:
+            case TOKEN_KW_RETURN:
+            case TOKEN_LBRACE:
+                longjmp(parser->loop_jmp, 1);
+            default:
+                break;
+        }
+        
+        parser_advance(parser);
+    }
+}
+
+static void parser_expect(Parser* parser, TokenType type, const char* msg) {
     if (parser->c && parser->c->type == type && parser->c->type != TOKEN_EOF) {
         parser_advance(parser);
     } else {
         diags_new_diag(DIAG_PARSER, DIAG_ERROR, parser->filename, parser->c->line, parser->c->col, msg);
 
         // We encountered an error at mid (possibly) of a statement so we must recover untill the end of the statement
-        while (parser->c && parser->c->type != TOKEN_EOF) {
-            if (parser->index > 0 && parser->tokens[parser->index - 1]->type == TOKEN_SEMI)
-                longjmp(parser->loop_jmp, 1);
-            
-            switch (parser->c->type) {
-                case TOKEN_KW_LET:
-                case TOKEN_KW_CONST:
-                case TOKEN_KW_IF:
-                case TOKEN_KW_WHILE:
-                case TOKEN_KW_RETURN:
-                case TOKEN_LBRACE:
-                    longjmp(parser->loop_jmp, 1);
-                default:
-                    break;
-            }
-            
-            parser_advance(parser);
-        }
+        parser_sync(parser);
 
         // Some says this is not a good practice who cares this is the easiest way to handle this job
         longjmp(parser->loop_jmp, 1);
     }
 }
 
-void parser_init(Parser* parser, const char* filename, Token** tokens) {
+static void parser_init(Parser* parser, const char* filename, Token** tokens) {
     parser->filename = filename;
     parser->tokens = tokens;
     parser->index = 0;
@@ -106,12 +114,12 @@ void parser_init(Parser* parser, const char* filename, Token** tokens) {
 // parse_expr starts
 // ----------------------------------
 
-Expr* parse_expr(Parser* parser) {
+static Expr* parse_expr(Parser* parser) {
     return parse_assignment(parser);
 }
 
 // Parse assignment expressions (lowest precedence)
-Expr* parse_assignment(Parser* parser) {
+static Expr* parse_assignment(Parser* parser) {
     Expr* expr = parse_logical_or(parser);
 
     if (!expr)
@@ -126,61 +134,28 @@ Expr* parse_assignment(Parser* parser) {
         parser_match(parser, TOKEN_ASSIGN_MOD)      ||
         parser_match(parser, TOKEN_ASSIGN_BIT_AND)  ||
         parser_match(parser, TOKEN_ASSIGN_BIT_OR)   ||
-        parser_match(parser, TOKEN_ASSIGN_BIT_XOR)) {
+        parser_match(parser, TOKEN_ASSIGN_BIT_XOR)  ||
+        parser_match(parser, TOKEN_ASSIGN_BIT_NOT)){
         
         Token* op = parser->tokens[parser->index - 1];
         Expr* value = parse_assignment(parser);  // Right associative
         
-        // Check that LHS is a valid assignment target (variable)
         if (expr->kind != EXPR_VARIABLE) {
             fprintf(stderr, "Invalid assignment target at line %d, col %d\n", expr->line, expr->col);
             exit(1);
         }
         
-        // Convert assignment operators to corresponding binary operations
-        BinaryOp binop;
-        switch (op->type) {
-            case TOKEN_ASSIGN:
-                // Simple assignment handled separately
-                return expr_new_binary(BIN_EQ, expr, value, expr->line, expr->col);
-            case TOKEN_ASSIGN_ADD:
-                binop = BIN_ADD;
-                break;
-            case TOKEN_ASSIGN_SUB:
-                binop = BIN_SUB;
-                break;
-            case TOKEN_ASSIGN_MUL:
-                binop = BIN_MUL;
-                break;
-            case TOKEN_ASSIGN_DIV:
-                binop = BIN_DIV;
-                break;
-            case TOKEN_ASSIGN_MOD:
-                binop = BIN_MOD;
-                break;
-            case TOKEN_ASSIGN_BIT_AND:
-                binop = BIN_BIT_AND;
-                break;
-            case TOKEN_ASSIGN_BIT_OR:
-                binop = BIN_BIT_OR;
-                break;
-            case TOKEN_ASSIGN_BIT_XOR:
-                binop = BIN_BIT_XOR;
-                break;
-            default:
-                fprintf(stderr, "Unknown assignment operator at line %d, col %d\n", op->line, op->col);
-                exit(1);
-        }
+        if (op->type == TOKEN_ASSIGN)
+            return expr_new_binary(BIN_ASSIGN, expr, value, expr->line, expr->col);
         
-        // For compound assignments (+=, -=, etc.), create a binary expression
-        Expr* binary = expr_new_binary(binop, expr, value, expr->line, expr->col);
-        return expr_new_binary(BIN_EQ, expr, binary, expr->line, expr->col);
+        Expr* binary = expr_new_binary(lut_compound_to_binop[op->type], expr, value, expr->line, expr->col);
+        return expr_new_binary(BIN_ASSIGN, expr, binary, expr->line, expr->col);
     }
     
     return expr;
 }
 
-Expr* parse_logical_or(Parser* parser) {
+static Expr* parse_logical_or(Parser* parser) {
     Expr* expr = parse_logical_and(parser);
     
     while (parser_match(parser, TOKEN_LOGICAL_OR)) {
@@ -191,7 +166,7 @@ Expr* parse_logical_or(Parser* parser) {
     return expr;
 }
 
-Expr* parse_logical_and(Parser* parser) {
+static Expr* parse_logical_and(Parser* parser) {
     Expr* expr = parse_bitwise_or(parser);
     
     while (parser_match(parser, TOKEN_LOGICAL_AND)) {
@@ -202,7 +177,7 @@ Expr* parse_logical_and(Parser* parser) {
     return expr;
 }
 
-Expr* parse_bitwise_or(Parser* parser) {
+static Expr* parse_bitwise_or(Parser* parser) {
     Expr* expr = parse_bitwise_xor(parser);
     
     while (parser_match(parser, TOKEN_BIT_OR)) {
@@ -213,7 +188,7 @@ Expr* parse_bitwise_or(Parser* parser) {
     return expr;
 }
 
-Expr* parse_bitwise_xor(Parser* parser) {
+static Expr* parse_bitwise_xor(Parser* parser) {
     Expr* expr = parse_bitwise_and(parser);
     
     while (parser_match(parser, TOKEN_BIT_XOR)) {
@@ -224,7 +199,7 @@ Expr* parse_bitwise_xor(Parser* parser) {
     return expr;
 }
 
-Expr* parse_bitwise_and(Parser* parser) {
+static Expr* parse_bitwise_and(Parser* parser) {
     Expr* expr = parse_equality(parser);
     
     while (parser_match(parser, TOKEN_BIT_AND)) {
@@ -235,7 +210,7 @@ Expr* parse_bitwise_and(Parser* parser) {
     return expr;
 }
 
-Expr* parse_equality(Parser* parser) {
+static Expr* parse_equality(Parser* parser) {
     Expr* expr = parse_comparison(parser);
     
     while (parser_match(parser, TOKEN_COMP_EQ) || parser_match(parser, TOKEN_COMP_NEQ)) {
@@ -249,7 +224,7 @@ Expr* parse_equality(Parser* parser) {
     return expr;
 }
 
-Expr* parse_comparison(Parser* parser) {
+static Expr* parse_comparison(Parser* parser) {
     Expr* expr = parse_bitshift(parser);
     
     //! TODO: Will be used LUT here
@@ -286,7 +261,7 @@ Expr* parse_comparison(Parser* parser) {
 }
 
 // Parse bit shift expressions (<<, >>)
-Expr* parse_bitshift(Parser* parser) {
+static Expr* parse_bitshift(Parser* parser) {
     Expr* expr = parse_term(parser);
     
     while (parser_match(parser, TOKEN_BIT_LSHIFT) || parser_match(parser, TOKEN_BIT_RSHIFT)) {
@@ -301,7 +276,7 @@ Expr* parse_bitshift(Parser* parser) {
 }
 
 // Parse term expressions (+, -)
-Expr* parse_term(Parser* parser) {
+static Expr* parse_term(Parser* parser) {
     Expr* expr = parse_factor(parser);
     
     while (parser_match(parser, TOKEN_OP_ADD) || parser_match(parser, TOKEN_OP_SUB)) {
@@ -316,7 +291,7 @@ Expr* parse_term(Parser* parser) {
 }
 
 // Parse factor expressions (*, /, %)
-Expr* parse_factor(Parser* parser) {
+static Expr* parse_factor(Parser* parser) {
     Expr* expr = parse_unary(parser);
     
     while (parser_match(parser, TOKEN_OP_MUL) || 
@@ -348,7 +323,7 @@ Expr* parse_factor(Parser* parser) {
 }
 
 // Parse unary expressions (!, ~, +, -, ++, --)
-Expr* parse_unary(Parser* parser) {
+static Expr* parse_unary(Parser* parser) {
     // Prefix unary operators
     if (parser_match(parser, TOKEN_LOGICAL_NOT) ||
         parser_match(parser, TOKEN_BIT_NOT) ||
@@ -392,7 +367,7 @@ Expr* parse_unary(Parser* parser) {
 }
 
 // Parse postfix expressions (++, --)
-Expr* parse_postfix(Parser* parser) {
+static Expr* parse_postfix(Parser* parser) {
     Expr* expr = parse_primary(parser);
     
     // Handle postfix operators
@@ -406,8 +381,7 @@ Expr* parse_postfix(Parser* parser) {
 }
 
 // Parse primary expressions (literals, variables, function calls, grouped expressions)
-Expr* parse_primary(Parser* parser) {
-    // Parse literals
+static Expr* parse_primary(Parser* parser) {
     if (parser_match(parser, TOKEN_LIT_STRING)) {
         Token* token = parser->tokens[parser->index - 1];
         return expr_new_literal(LITERAL_STRING, token->value, token->line, token->col);
@@ -421,6 +395,11 @@ Expr* parse_primary(Parser* parser) {
     if (parser_match(parser, TOKEN_LIT_FLOAT)) {
         Token* token = parser->tokens[parser->index - 1];
         return expr_new_literal(LITERAL_FLOAT, token->value, token->line, token->col);
+    }
+
+    if (parser_match(parser, TOKEN_LIT_NONE)) {
+        Token* token = parser->tokens[parser->index - 1];
+        return expr_new_literal(LITERAL_NONE, token->value, token->line, token->col);
     }
     
     // Parse variables and function calls
@@ -456,10 +435,9 @@ Expr* parse_primary(Parser* parser) {
         parser_expect(parser, TOKEN_RPAREN, "Expected ')' after expression");
         return expr;
     }
-    
-    // It is okay to crash program here instead of sending diagnostic info
-    // because if program reaches here something is wrong with this code.
+
     diags_new_diag(DIAG_PARSER, DIAG_ERROR, parser->filename, parser->c->line, parser->c->col, "Unexpected token in expression");
+    parser_sync(parser);
     longjmp(parser->loop_jmp, 1);
     
     return NULL;
@@ -469,7 +447,7 @@ Expr* parse_primary(Parser* parser) {
 // parse_expr ends
 // ----------------------------------
 
-Stmt** parse_helper_compound(Parser* parser) {
+static Stmt** parse_helper_compound(Parser* parser) {
     Stmt** stmts = (Stmt**)darray_new(Stmt*);
     parser_expect(parser, TOKEN_LBRACE, "Expected '{' at the beginning of compound statement");
     while (parser->c && parser->c->type != TOKEN_RBRACE) {
@@ -485,12 +463,12 @@ Stmt** parse_helper_compound(Parser* parser) {
     return stmts;
 }
 
-Stmt* parse_compound(Parser* parser) {
+static Stmt* parse_compound(Parser* parser) {
     Stmt** stmts = parse_helper_compound(parser);
     return stmt_new_compound(stmts, parser->c->line, parser->c->col);
 }
 
-Stmt* parse_decl(Parser* parser) {
+static Stmt* parse_decl(Parser* parser) {
     TokenType type = parser->c->type;
     parser_advance(parser);
     
@@ -507,7 +485,7 @@ Stmt* parse_decl(Parser* parser) {
     return stmt_new_decl(name, initializer, type == TOKEN_KW_CONST, parser->c->line, parser->c->col);
 }
 
-Stmt* parse_while(Parser* parser) {
+static Stmt* parse_while(Parser* parser) {
     parser_advance(parser);
     parser_expect(parser, TOKEN_LPAREN, "Expected '(' after 'while'");
 
@@ -518,7 +496,7 @@ Stmt* parse_while(Parser* parser) {
     return stmt_new_while(condition, body, parser->c->line, parser->c->col);
 }
 
-Stmt* parse_if(Parser* parser) {
+static Stmt* parse_if(Parser* parser) {
     parser_advance(parser);
     parser_expect(parser, TOKEN_LPAREN, "Expected '(' after 'if'");
     
@@ -536,7 +514,7 @@ Stmt* parse_if(Parser* parser) {
     return stmt_new_if(condition, then_branch, else_branch, parser->c->line, parser->c->col);
 }
 
-Stmt* parse_method_decl(Parser* parser) {
+static Stmt* parse_method_decl(Parser* parser) {
     parser_advance(parser);
 
     StringView name = parser->c->value;
@@ -550,7 +528,7 @@ Stmt* parse_method_decl(Parser* parser) {
             darray_push(params, param);
             parser_advance(parser);
         } else {
-            parser_expect(parser, TOKEN_COMMA, "Expected ',' or ')' after parameter");
+            parser_expect(parser, TOKEN_COMMA, "Expected identifier as parameter name");
         }
     }
 
@@ -560,7 +538,7 @@ Stmt* parse_method_decl(Parser* parser) {
     return stmt_new_method_decl(name, params, body, parser->c->line, parser->c->col);
 }
 
-Stmt* parse_return(Parser* parser) {
+static Stmt* parse_return(Parser* parser) {
     parser_advance(parser);
     Expr* value = NULL;
 
@@ -571,19 +549,19 @@ Stmt* parse_return(Parser* parser) {
     return stmt_new_return(value, parser->c->line, parser->c->col);
 }
 
-Stmt* parse_break(Parser* parser) {
+static Stmt* parse_break(Parser* parser) {
     parser_advance(parser);
     parser_expect(parser, TOKEN_SEMI, "Expected ';' after break statement");
     return stmt_new_break(parser->c->line, parser->c->col);
 }
 
-Stmt* parse_continue(Parser* parser) {
+static Stmt* parse_continue(Parser* parser) {
     parser_advance(parser);
     parser_expect(parser, TOKEN_SEMI, "Expected ';' after continue statement");
     return stmt_new_continue(parser->c->line, parser->c->col);
 }
 
-Stmt* parse_stmt(Parser* parser) {
+static Stmt* parse_stmt(Parser* parser) {
     switch (parser->c->type) {
         case TOKEN_KW_LET:
         case TOKEN_KW_CONST:
@@ -612,6 +590,8 @@ Stmt* parse_stmt(Parser* parser) {
                 parser_expect(parser, TOKEN_SEMI, "Expected ';' after expression");
                 return stmt_new_expr(expr, parser->c->line, parser->c->col);
             }
+
+            parser_advance(parser);
         }
 
 

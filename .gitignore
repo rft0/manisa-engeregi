@@ -1,1 +1,4 @@
-/grb
+build/
+grb/
+obj/
+bin/

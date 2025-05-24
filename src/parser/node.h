@@ -17,6 +17,7 @@ typedef enum {
 } StmtKind;
 
 typedef enum {
+    BIN_ASSIGN,
     BIN_ADD,
     BIN_SUB,
     BIN_MUL,
@@ -80,6 +81,7 @@ typedef enum LiteralType {
     LITERAL_STRING,
     LITERAL_FLOAT,
     LITERAL_INT,
+    LITERAL_NONE,
 } LiteralType;
 
 typedef struct LiteralExpr {
