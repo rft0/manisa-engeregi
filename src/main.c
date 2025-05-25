@@ -64,9 +64,12 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Compilation failed due to errors.\n");
 
         return 1;
+    } else {
+        fprintf(stderr, "Compilation completed successfully.\n");
     }
 
-    diags_free();
+    // Free the source code after parsing
+    free(src);
 
     // Byte code generation here after bytecode generation we can free the tokens and stmts
 
