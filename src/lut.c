@@ -2,16 +2,16 @@
 
 #define KW_CONST        "sabit"
 #define KW_LET          "değişken"
-#define KW_AND          "ve"
-#define KW_OR           "veya"
+#define KW_AND          "ile"
+#define KW_OR           "yahut"
 #define KW_IF           "şayet"
 #define KW_ELSE         "değilse"
 #define KW_WHILE        "madem"
 #define KW_METHOD       "marifet"
 #define KW_RETURN       "tebliğ"
 #define KW_BREAK        "yeter"
-#define KW_CONTINUE     "devam"
-#define KW_NONE         "none"
+#define KW_CONTINUE     "sıradaki"
+#define KW_NONE         "yok"
 
 HashMap* lut_kw_to_token = NULL;
 

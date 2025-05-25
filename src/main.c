@@ -12,10 +12,20 @@
 #include "parser/parser.h"
 #include "parser/analyser.h"
 
-int main() {
-    const char* filename = "deneme.txt";
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <source_file>\n", argv[0]);
+        return 1;
+    }
+
+    const char* filename = argv[1];
     char* src = read_file_binary(filename, NULL);
 
+    if (!src) {
+        fprintf(stderr, "Failed to read source file: %s\n", filename);
+        return 1;
+    }
+    
     // Some editors add BOM at the beginning of the files with UTF-8 encoding
     if (src[0] == '\xEF' && src[1] == '\xBB' && src[2] == '\xBF')
         src += 3; // Skip BOM
