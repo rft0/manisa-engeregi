@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Byte code generation here after bytecode generation we can free the tokens and stmts
+    // Byte code generation here after bytecode generation we can free the tokens and stmts 
     
     darray_for(tokens) free(tokens[__i]);
     darray_free(tokens);
