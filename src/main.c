@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 
         return 1;
     } else {
-        fprintf(stderr, "Compilation completed successfully.\n");
+        fprintf(stderr, "Lexical analysis and parsing completed successfully\n");
     }
 
     // Free the source code after parsing
