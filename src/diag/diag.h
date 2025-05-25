@@ -7,7 +7,6 @@ typedef enum {
     DIAG_LEXER,
     DIAG_PARSER,
     DIAG_SEMANTIC,
-    DIAG_RUNTIME,
 } DiagnosticType;
 
 typedef enum {

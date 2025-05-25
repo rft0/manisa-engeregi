@@ -64,25 +64,23 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Compilation failed due to errors.\n");
 
         return 1;
-    } else {
-        fprintf(stderr, "Lexical analysis and parsing completed successfully\n");
     }
 
-    // Free the source code after parsing
-    free(src);
-
     // Byte code generation here after bytecode generation we can free the tokens and stmts
-
+    
     darray_for(tokens) free(tokens[__i]);
     darray_free(tokens);
-
+    
     darray_for(stmts) free(stmts[__i]);
     darray_free(stmts);
 
-    // VM execution here
-
     diags_dump();
     diags_free();
+    free(src);
+
+    // Different structure than diag will be used for runtime errors
+    // VM execution here
+
     lut_free();
 
     return 0;
