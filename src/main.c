@@ -12,6 +12,9 @@
 #include "parser/parser.h"
 #include "parser/analyser.h"
 
+#include "vm/co.h"
+#include "vm/vm.h"
+
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <source_file>\n", argv[0]);
@@ -67,6 +70,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Byte code generation here after bytecode generation we can free the tokens and stmts 
+    MECodeObject* co = co_new(stmts);
     
     darray_for(tokens) free(tokens[__i]);
     darray_free(tokens);
