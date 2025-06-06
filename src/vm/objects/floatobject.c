@@ -72,7 +72,7 @@ static MEObject* float_str(MEFloatObject* obj) {
 }
 
 METypeObject me_type_float = {
-    .tp_name = "long",
+    .tp_name = "float",
     .tp_sizeof = sizeof(MEObject),
     .tp_dealloc = (fn_destructor)float_dealloc,
     .tp_str = (fn_str)float_str,
