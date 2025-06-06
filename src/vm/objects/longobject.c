@@ -60,7 +60,7 @@ static MEObject* long_str(MELongObject* obj) {
 
 METypeObject me_type_long = {
     .tp_name = "long",
-    .tp_sizeof = sizeof(MEObject),
+    .tp_sizeof = sizeof(MELongObject),
     .tp_dealloc = (fn_destructor)long_dealloc,
     .tp_str = (fn_str)long_str,
 };

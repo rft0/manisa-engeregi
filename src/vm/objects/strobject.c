@@ -124,7 +124,7 @@ static MEObject* str_str(MEStrObject* obj) {
 
 METypeObject me_type_str = {
     .tp_name = "str",
-    .tp_sizeof = sizeof(MEObject),
+    .tp_sizeof = sizeof(MEStrObject),
     .tp_dealloc = (fn_destructor)str_dealloc,
     .tp_str = (fn_str)str_str,
 };
