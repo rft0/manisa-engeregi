@@ -121,6 +121,7 @@ METypeObject me_type_error_notimplemented = {
 
 METypeObject me_type_error_outofmemory = {
     .tp_name = "OutOfMemoryError",
+    .tp_base = NULL,
     .tp_sizeof = sizeof(me_error_outofmemory_instance),
     .tp_dealloc = NULL,
     .tp_str = error_outofmemory_str,

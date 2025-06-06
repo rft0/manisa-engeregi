@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "errorobject.h"
+#include "longobject.h"
 #include "boolobject.h"
 #include "strobject.h"
 
@@ -89,34 +90,64 @@ static MEObject* float_cmp(MEFloatObject* v, MEFloatObject* w, MECmpOp op) {
     }
 }
 
-static MEObject* float_nb_add(MEFloatObject* v, MEFloatObject* w) {
-    return me_float_from_double(v->ob_value + w->ob_value);
+static MEObject* float_nb_add(MEObject* v, MEObject* w) {
+    if (me_float_check(w))
+        return me_float_from_double(((MEFloatObject*)v)->ob_value + ((MEFloatObject*)w)->ob_value);
+    else if (me_long_check(w))
+        return me_float_from_double(((MEFloatObject*)v)->ob_value + (double)((MELongObject*)w)->ob_value);
+    else
+        return me_error_notimplemented;
 }
 
-static MEObject* float_nb_sub(MEFloatObject* v, MEFloatObject* w) {
-    return me_float_from_double(v->ob_value - w->ob_value);
+static MEObject* float_nb_sub(MEObject* v, MEObject* w) {
+    if (me_float_check(w))
+        return me_float_from_double(((MEFloatObject*)v)->ob_value - ((MEFloatObject*)w)->ob_value);
+    else if (me_long_check(w))
+        return me_float_from_double(((MEFloatObject*)v)->ob_value - (double)((MELongObject*)w)->ob_value);
+    else
+        return me_error_notimplemented;
 }
 
-static MEObject* float_nb_mul(MEFloatObject* v, MEFloatObject* w) {
-    return me_float_from_double(v->ob_value * w->ob_value);
+static MEObject* float_nb_mul(MEObject* v, MEObject* w) {
+    if (me_float_check(w))
+        return me_float_from_double(((MEFloatObject*)v)->ob_value * ((MEFloatObject*)w)->ob_value);
+    else if (me_long_check(w))
+        return me_float_from_double(((MEFloatObject*)v)->ob_value * (double)((MELongObject*)w)->ob_value);
+    else
+        return me_error_notimplemented;
 }
 
-static MEObject* float_nb_div(MEFloatObject* v, MEFloatObject* w) {
-    if (w->ob_value == 0.0)
-        return me_error_divisionbyzero;
-
-    return me_float_from_double(v->ob_value / w->ob_value);
+static MEObject* float_nb_div(MEObject* v, MEObject* w) {
+    if (me_float_check(w)) {
+        if (((MEFloatObject*)w)->ob_value == 0.0)
+            return me_error_divisionbyzero;
+        return me_float_from_double(((MEFloatObject*)v)->ob_value / ((MEFloatObject*)w)->ob_value);
+    } else if (me_long_check(w)) {
+        if (((MELongObject*)w)->ob_value == 0)
+            return me_error_divisionbyzero;
+        return me_float_from_double(((MEFloatObject*)v)->ob_value / (double)((MELongObject*)w)->ob_value);
+    } else {
+        return me_error_notimplemented;
+    }
 }
 
-static MEObject* float_nb_mod(MEFloatObject* v, MEFloatObject* w) {
-    if (w->ob_value == 0.0)
-        return me_error_divisionbyzero;
-
-    return me_float_from_double(fmod(v->ob_value, w->ob_value));
+static MEObject* float_nb_mod(MEObject* v, MEObject* w) {
+    if (me_float_check(w)) {
+        if (((MEFloatObject*)w)->ob_value == 0.0)
+            return me_error_divisionbyzero;
+        return me_float_from_double(fmod(((MEFloatObject*)v)->ob_value, ((MEFloatObject*)w)->ob_value));
+    } else if (me_long_check(w)) {
+        if (((MELongObject*)w)->ob_value == 0)
+            return me_error_divisionbyzero;
+        return me_float_from_double(fmod(((MEFloatObject*)v)->ob_value, (double)((MELongObject*)w)->ob_value));
+    } else {
+        return me_error_notimplemented;
+    }
 }
 
 METypeObject me_type_float = {
     .tp_name = "float",
+    .tp_base = NULL,
     .tp_sizeof = sizeof(MEFloatObject),
     .tp_dealloc = (fn_destructor)float_dealloc,
     .tp_str = (fn_str)float_str,

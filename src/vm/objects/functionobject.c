@@ -29,6 +29,7 @@ static MEObject* function_cmp(MEFunctionObject* v, MEFunctionObject* w, MECmpOp 
 
 METypeObject me_type_function = {
     .tp_name = "function",
+    .tp_base = NULL,
     .tp_sizeof = sizeof(MEFunctionObject),
     .tp_dealloc = NULL,
     .tp_str = (fn_str)function_str,

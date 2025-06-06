@@ -32,6 +32,7 @@ static MEObject* none_cmp(MENoneObject* v, MENoneObject* w, MECmpOp op) {
 
 METypeObject me_type_none = {
     .tp_name = "none",
+    .tp_base = NULL,
     .tp_sizeof = sizeof(MENoneObject),
     .tp_dealloc = NULL,
     .tp_str = (fn_str)none_str,

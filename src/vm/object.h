@@ -13,7 +13,7 @@ typedef struct MEObject MEObject;
 #define ME_OBJHEAD size_t ob_refcount; METypeObject* ob_type;
 
 #define ME_TYPE(obj) ((obj)->ob_type)
-#define ME_TYPE_CHECK(obj, typeobject) ((obj)->ob_type == typeobject)
+#define ME_TYPE_CHECK(obj, typeobject) ((obj)->ob_type == typeobject || (obj)->ob_type->tp_base == typeobject)
 
 struct MEObject {
     ME_OBJHEAD
@@ -47,6 +47,7 @@ typedef MEObject* (*fn_cmp)(MEObject*, MEObject*, MECmpOp);
 
 struct METypeObject {
     const char* tp_name;
+    METypeObject* tp_base;
     size_t tp_sizeof;
     fn_destructor tp_dealloc;
     fn_str tp_str;
@@ -67,5 +68,7 @@ struct METypeObject {
 
     fn_cmp tp_cmp;
 };
+
+void me_objects_init();
 
 #endif

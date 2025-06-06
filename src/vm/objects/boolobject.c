@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "strobject.h"
+#include "longobject.h"
 
 MEObject me_true_instance = {
     .ob_type = &me_type_bool,
@@ -41,19 +42,9 @@ static MEObject* bool_bool(MEBoolObject* obj) {
     return obj->ob_value ? me_true : me_false;
 }
 
-static MEObject* bool_cmp(MEBoolObject* v, MEBoolObject* w, MECmpOp op) {
-    switch (op) {
-        case ME_CMP_EQ: return v->ob_value == w->ob_value ? me_true : me_false;
-        case ME_CMP_NEQ: return v->ob_value != w->ob_value ? me_true : me_false;
-        case ME_CMP_LT: return v->ob_value < w->ob_value ? me_true : me_false;
-        case ME_CMP_LTE: return v->ob_value <= w->ob_value ? me_true : me_false;
-        case ME_CMP_GT: return v->ob_value > w->ob_value ? me_true : me_false;
-        case ME_CMP_GTE: return v->ob_value >= w->ob_value ? me_true : me_false;
-    }
-}
-
 METypeObject me_type_bool = {
     .tp_name = "bool",
+    .tp_base = &me_type_long,
     .tp_sizeof = sizeof(MEBoolObject),
     .tp_dealloc = (fn_destructor)bool_dealloc,
     .tp_str = (fn_str)bool_str,
@@ -72,5 +63,21 @@ METypeObject me_type_bool = {
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
 
-    .tp_cmp = (fn_cmp)bool_cmp,
+    .tp_cmp = NULL,
 };
+
+void me_bool_init() {
+    me_type_bool.tp_nb_add = me_type_long.tp_nb_add;
+    me_type_bool.tp_nb_sub = me_type_long.tp_nb_sub;
+    me_type_bool.tp_nb_mul = me_type_long.tp_nb_mul;
+    me_type_bool.tp_nb_div = me_type_long.tp_nb_div;
+    me_type_bool.tp_nb_mod = me_type_long.tp_nb_mod;
+    me_type_bool.tp_nb_bit_and = me_type_long.tp_nb_bit_and;
+    me_type_bool.tp_nb_bit_or = me_type_long.tp_nb_bit_or;
+    me_type_bool.tp_nb_bit_xor = me_type_long.tp_nb_bit_xor;
+    me_type_bool.tp_nb_bit_not = me_type_long.tp_nb_bit_not;
+    me_type_bool.tp_nb_lshift = me_type_long.tp_nb_lshift;
+    me_type_bool.tp_nb_rshift = me_type_long.tp_nb_rshift;
+
+    me_type_bool.tp_cmp = me_type_long.tp_cmp;
+}

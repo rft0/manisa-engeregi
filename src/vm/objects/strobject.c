@@ -167,13 +167,13 @@ static MEObject* str_nb_add(MEObject* v, MEObject* w) {
 
 static MEObject* str_nb_mul(MEObject* v, MEObject* w) {
     if (!me_str_check(v) || !me_long_check(w))
-        return me_error_typemismatch;
+        return me_error_notimplemented;
 
     MEStrObject* str_v = (MEStrObject*)v;
     MELongObject* long_w = (MELongObject*)w;
 
     if (long_w->ob_value < 0)
-        return me_error_typemismatch;
+        return me_str_from_str(""); 
 
     MEStrObject* new_str = (MEStrObject*)malloc(sizeof(MEStrObject));
     if (!new_str)
@@ -197,15 +197,16 @@ static MEObject* str_nb_mul(MEObject* v, MEObject* w) {
 
 static METypeObject me_type_str = {
     .tp_name = "str",
+    .tp_base = NULL,
     .tp_sizeof = sizeof(MEStrObject),
     .tp_dealloc = (fn_destructor)str_dealloc,
     .tp_str = (fn_str)str_str,
     .tp_bool = (fn_bool)str_bool,
     .tp_call = NULL,
 
-    .tp_nb_add = NULL,
+    .tp_nb_add = (fn_nb_add)str_nb_add,
     .tp_nb_sub = NULL,
-    .tp_nb_mul = NULL,
+    .tp_nb_mul = (fn_nb_mul)str_nb_mul,
     .tp_nb_div = NULL,
     .tp_nb_mod = NULL,
     .tp_nb_bit_and = NULL,

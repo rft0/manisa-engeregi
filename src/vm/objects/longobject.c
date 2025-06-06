@@ -64,7 +64,7 @@ static MEObject* long_bool(MELongObject* obj) {
     return obj->ob_value ? me_true : me_false;
 }
 
-static MEObject* long_cmp(MELongObject* v, MELongObject* w, MECmpOp op) {
+MEObject* long_cmp(MELongObject* v, MELongObject* w, MECmpOp op) {
     switch (op) {
         case ME_CMP_EQ: return v->ob_value == w->ob_value ? me_true : me_false;
         case ME_CMP_NEQ: return v->ob_value != w->ob_value ? me_true : me_false;
@@ -75,58 +75,124 @@ static MEObject* long_cmp(MELongObject* v, MELongObject* w, MECmpOp op) {
     }
 }
 
-static MEObject* long_nb_add(MELongObject* v, MELongObject* w) {
-    return me_long_from_long(v->ob_value + w->ob_value);
+MEObject* long_nb_add(MEObject* v, MEObject* w) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+    MELongObject* lw = (MELongObject*)w;
+
+    return me_long_from_long(lv->ob_value + lw->ob_value);
 }
 
-static MEObject* long_nb_sub(MELongObject* v, MELongObject* w) {
-    return me_long_from_long(v->ob_value - w->ob_value);
+MEObject* long_nb_sub(MEObject* v, MEObject* w) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+    MELongObject* lw = (MELongObject*)w;
+
+    return me_long_from_long(lv->ob_value - lw->ob_value);
 }
 
-static MEObject* long_nb_mul(MELongObject* v, MELongObject* w) {
-    return me_long_from_long(v->ob_value * w->ob_value);
+MEObject* long_nb_mul(MEObject* v, MEObject* w) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+    MELongObject* lw = (MELongObject*)w;
+
+    return me_long_from_long(lv->ob_value * lw->ob_value);
 }
 
-static MEObject* long_nb_div(MELongObject* v, MELongObject* w) {
-    if (w->ob_value == 0)
+MEObject* long_nb_div(MEObject* v, MEObject* w) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+    MELongObject* lw = (MELongObject*)w;
+
+    if (lw->ob_value == 0)
         return me_error_divisionbyzero;
 
-    return me_long_from_long(v->ob_value / w->ob_value);
+    return me_long_from_long(lv->ob_value / lw->ob_value);
 }
 
-static MEObject* long_nb_mod(MELongObject* v, MELongObject* w) {
-    if (w->ob_value == 0)
+MEObject* long_nb_mod(MEObject* v, MEObject* w) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+    MELongObject* lw = (MELongObject*)w;
+
+    if (lw->ob_value == 0)
         return me_error_divisionbyzero;
 
-    return me_long_from_long(v->ob_value % w->ob_value);
+    return me_long_from_long(lv->ob_value % lw->ob_value);
 }
 
-static MEObject* long_nb_bit_and(MELongObject* v, MELongObject* w) {
-    return me_long_from_long(v->ob_value & w->ob_value);
+MEObject* long_nb_bit_and(MEObject* v, MEObject* w) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+    MELongObject* lw = (MELongObject*)w;
+
+    return me_long_from_long(lv->ob_value & lw->ob_value);
 }
 
-static MEObject* long_nb_bit_or(MELongObject* v, MELongObject* w) {
-    return me_long_from_long(v->ob_value | w->ob_value);
+MEObject* long_nb_bit_or(MEObject* v, MEObject* w) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+    MELongObject* lw = (MELongObject*)w;
+
+    return me_long_from_long(lv->ob_value | lw->ob_value);
 }
 
-static MEObject* long_nb_bit_xor(MELongObject* v, MELongObject* w) {
-    return me_long_from_long(v->ob_value ^ w->ob_value);
+MEObject* long_nb_bit_xor(MEObject* v, MEObject* w) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+    MELongObject* lw = (MELongObject*)w;
+
+    return me_long_from_long(lv->ob_value ^ lw->ob_value);
 }
 
-static MEObject* long_nb_bit_not(MELongObject* v) {
-    return me_long_from_long(~v->ob_value);
+MEObject* long_nb_bit_not(MEObject* v) {
+    if (!me_long_check(v))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+
+    return me_long_from_long(~lv->ob_value);
 }
 
-static MEObject* long_nb_lshift(MELongObject* v, MELongObject* w) {
-    return me_long_from_long(v->ob_value << w->ob_value);
+MEObject* long_nb_lshift(MEObject* v, MEObject* w) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+    MELongObject* lw = (MELongObject*)w;
+
+    return me_long_from_long(lv->ob_value << lw->ob_value);
 }
 
-static MEObject* long_nb_rshift(MELongObject* v, MELongObject* w) {
-    return me_long_from_long(v->ob_value >> w->ob_value);
+MEObject* long_nb_rshift(MEObject* v, MEObject* w) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+    MELongObject* lw = (MELongObject*)w;
+
+    return me_long_from_long(lv->ob_value >> lw->ob_value);
 }
 
 METypeObject me_type_long = {
     .tp_name = "long",
+    .tp_base = NULL,
     .tp_sizeof = sizeof(MELongObject),
     .tp_dealloc = (fn_destructor)long_dealloc,
     .tp_str = (fn_str)long_str,
