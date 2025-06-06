@@ -13,5 +13,6 @@ int utf8_isvalid(const char* str);
 int utf8_isalpha(const char* c);
 int utf8_isdigit(const char* c);
 int utf8_isalnum(const char* c);
+int utf8_isspace(const char* c);
 
 #endif

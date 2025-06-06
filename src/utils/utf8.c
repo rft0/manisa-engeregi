@@ -151,3 +151,6 @@ int utf8_isalnum(const char* c) {
     return utf8_isalpha(c) || utf8_isdigit(c);
 }
 
+int utf8_isspace(const char* c) {
+    return *c == ' ' || *c == '\t' || *c == '\n' || *c == '\r' || *c == '\v' || *c == '\f';
+}

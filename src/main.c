@@ -1,3 +1,5 @@
+#define ME_DEBUG
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -16,14 +18,19 @@
 #include "vm/vm.h"
 
 int main(int argc, char *argv[]) {
+#ifndef ME_DEBUG
+    // COMMAND LINE HANDLING WILL BE DONE IN SEPERATE FILE LASTLY DO NOT ADD THINGS LIKE THAT HERE.
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <source_file>\n", argv[0]);
         return 1;
     }
 
     const char* filename = argv[1];
-    char* src = read_file_binary(filename, NULL);
+#else
+    const char* filename = "deneme.me";
+#endif
 
+    char* src = read_file_binary(filename, NULL);
     if (!src) {
         fprintf(stderr, "Failed to read source file: %s\n", filename);
         return 1;

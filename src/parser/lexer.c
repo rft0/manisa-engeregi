@@ -1,13 +1,13 @@
 #include "lexer.h"
 
 #include <string.h>
-#include <ctype.h>
 
 #include "../utils/darray.h"
 #include "../utils/utf8.h"
 
 #include "../diag/diag.h"
 #include "../lut.h"
+#include "token.h"
 
 typedef struct _Lexer {
     const char* src;
@@ -40,7 +40,10 @@ static void advance(Lexer* lexer) {
 }
 
 static void skipwhitespace(Lexer* lexer) {
-    while(*lexer->c != '\0' && isspace(*lexer->c) && *lexer->c != '\n')
+    // Default isspace (without setting locale) on windows CRT was working weirdly so created a custom
+    // implementation for isspace even though it is in utf8 library it still just checks for one byte characters
+    // linux libc isspace was working fine btw.
+    while(*lexer->c != '\0' && utf8_isspace(lexer->c) && *lexer->c != '\n')
         advance(lexer);
 }
 
@@ -48,7 +51,6 @@ static void skipcomment(Lexer* lexer) {
     while (*lexer->c && *lexer->c != '\n')
         advance(lexer);
 }
-
 static Token* get_identifier(Lexer* lexer) {
     StringView sv;
     sv.data = lexer->c;
@@ -328,6 +330,8 @@ Token** lex(const char* filename, const char* src) {
         Token* token = get_token(&lexer);
         if (!token)
             continue;
+
+        // token_dump(token);
 
         if (token->type == TOKEN_EOF) {
             darray_push(tokens, token);

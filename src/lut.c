@@ -7,7 +7,7 @@
 #define KW_IF           "şayet"
 #define KW_ELSE         "değilse"
 #define KW_WHILE        "madem"
-#define KW_FUNCTION       "marifet"
+#define KW_FUNCTION     "marifet"
 #define KW_RETURN       "tebliğ"
 #define KW_BREAK        "yeter"
 #define KW_CONTINUE     "sıradaki"
