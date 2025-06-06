@@ -119,12 +119,16 @@ static MEObject* float_nb_mul(MEObject* v, MEObject* w) {
 
 static MEObject* float_nb_div(MEObject* v, MEObject* w) {
     if (me_float_check(w)) {
-        if (((MEFloatObject*)w)->ob_value == 0.0)
-            return me_error_divisionbyzero;
+        if (((MEFloatObject*)w)->ob_value == 0.0) {
+            // SET GLOBAL ERROR TO me_error_divisionbyzero
+            return NULL;
+        }
         return me_float_from_double(((MEFloatObject*)v)->ob_value / ((MEFloatObject*)w)->ob_value);
     } else if (me_long_check(w)) {
-        if (((MELongObject*)w)->ob_value == 0)
-            return me_error_divisionbyzero;
+        if (((MELongObject*)w)->ob_value == 0) {
+            // SET GLOBAL ERROR TO me_error_divisionbyzero
+            return NULL;
+        }
         return me_float_from_double(((MEFloatObject*)v)->ob_value / (double)((MELongObject*)w)->ob_value);
     } else {
         return me_error_notimplemented;
@@ -133,12 +137,16 @@ static MEObject* float_nb_div(MEObject* v, MEObject* w) {
 
 static MEObject* float_nb_mod(MEObject* v, MEObject* w) {
     if (me_float_check(w)) {
-        if (((MEFloatObject*)w)->ob_value == 0.0)
-            return me_error_divisionbyzero;
+        if (((MEFloatObject*)w)->ob_value == 0.0) {
+            // SET GLOBAL ERROR TO me_error_divisionbyzero
+            return NULL;
+        }
         return me_float_from_double(fmod(((MEFloatObject*)v)->ob_value, ((MEFloatObject*)w)->ob_value));
     } else if (me_long_check(w)) {
-        if (((MELongObject*)w)->ob_value == 0)
-            return me_error_divisionbyzero;
+        if (((MELongObject*)w)->ob_value == 0) {
+            // SET GLOBAL ERROR TO me_error_divisionbyzero
+            return NULL;
+        }
         return me_float_from_double(fmod(((MEFloatObject*)v)->ob_value, (double)((MELongObject*)w)->ob_value));
     } else {
         return me_error_notimplemented;

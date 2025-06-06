@@ -112,8 +112,10 @@ MEObject* long_nb_div(MEObject* v, MEObject* w) {
     MELongObject* lv = (MELongObject*)v;
     MELongObject* lw = (MELongObject*)w;
 
-    if (lw->ob_value == 0)
-        return me_error_divisionbyzero;
+    if (lw->ob_value == 0) {
+        // SET GLOBAL ERROR TO me_error_divisionbyzero
+        return NULL;
+    }
 
     return me_long_from_long(lv->ob_value / lw->ob_value);
 }
@@ -125,8 +127,10 @@ MEObject* long_nb_mod(MEObject* v, MEObject* w) {
     MELongObject* lv = (MELongObject*)v;
     MELongObject* lw = (MELongObject*)w;
 
-    if (lw->ob_value == 0)
-        return me_error_divisionbyzero;
+    if (lw->ob_value == 0) {
+        // SET GLOBAL ERROR TO me_error_divisionbyzero
+        return NULL;
+    }
 
     return me_long_from_long(lv->ob_value % lw->ob_value);
 }

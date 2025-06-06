@@ -139,15 +139,19 @@ static MEObject* str_cmp(MEStrObject* v, MEStrObject* w, MECmpOp op) {
 }
 
 static MEObject* str_nb_add(MEObject* v, MEObject* w) {
-    if (!me_str_check(v) || !me_str_check(w))
-        return me_error_typemismatch;
+    if (!me_str_check(v) || !me_str_check(w)) {
+        // SET GLOBAL ERROR TO me_error_typemismatch
+        return NULL;
+    }
 
     MEStrObject* str_v = (MEStrObject*)v;
     MEStrObject* str_w = (MEStrObject*)w;
 
     MEStrObject* new_str = (MEStrObject*)malloc(sizeof(MEStrObject));
-    if (!new_str)
-        return me_error_outofmemory;
+    if (!new_str) {
+        // SET GLOBAL ERROR TO me_error_outofmemory
+        return NULL;
+    }
 
     new_str->ob_type = &me_type_str;
     new_str->ob_refcount = 1;
@@ -156,7 +160,8 @@ static MEObject* str_nb_add(MEObject* v, MEObject* w) {
     new_str->ob_value = (char*)malloc(new_str->ob_bytelength);
     if (!new_str->ob_value) {
         free(new_str);
-        return me_error_outofmemory;
+        // SET GLOBAL ERROR TO me_error_outofmemory
+        return NULL;
     }
 
     memcpy(new_str->ob_value, str_v->ob_value, str_v->ob_bytelength);
@@ -176,8 +181,10 @@ static MEObject* str_nb_mul(MEObject* v, MEObject* w) {
         return me_str_from_str(""); 
 
     MEStrObject* new_str = (MEStrObject*)malloc(sizeof(MEStrObject));
-    if (!new_str)
-        return me_error_outofmemory;
+    if (!new_str) {
+        // SET GLOBAL ERROR TO me_error_outofmemory
+        return NULL;
+    }
 
     new_str->ob_type = &me_type_str;
     new_str->ob_refcount = 1;
@@ -186,7 +193,8 @@ static MEObject* str_nb_mul(MEObject* v, MEObject* w) {
     new_str->ob_value = (char*)malloc(new_str->ob_bytelength);
     if (!new_str->ob_value) {
         free(new_str);
-        return me_error_outofmemory;
+        // SET GLOBAL ERROR TO me_error_outofmemory
+        return NULL;
     }
 
     for (size_t i = 0; i < long_w->ob_value; i++)
