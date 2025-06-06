@@ -6,7 +6,9 @@
 
 #include "../../utils/utf8.h"
 
+#include "errorobject.h"
 #include "boolobject.h"
+#include "longobject.h"
 
 MEObject* me_str_from_str(const char* str) {
     MEStrObject* obj = (MEStrObject*)malloc(sizeof(MEStrObject));
@@ -19,14 +21,13 @@ MEObject* me_str_from_str(const char* str) {
     obj->ob_length = utf8_strlen(str);
     obj->ob_bytelength = utf8_strsize(str);
 
-    obj->ob_value = (char*)malloc(obj->ob_bytelength + 1);
+    obj->ob_value = (char*)malloc(obj->ob_bytelength);
     if (!obj->ob_value) {
         free(obj);
         return NULL;
     }
 
     memcpy(obj->ob_value, str, obj->ob_bytelength);
-    obj->ob_value[obj->ob_bytelength] = '\0';
 
     return (MEObject*)obj;
 }
@@ -46,7 +47,7 @@ MEObject* me_str_from_long(long value) {
     }
 
     int written = snprintf(obj->ob_value, 32, "%ld", value);
-    if (written < 0 || written >= 31) {
+    if (written < 0 || written >= 32) {
         free(obj->ob_value);
         free(obj);
         return NULL;
@@ -54,7 +55,6 @@ MEObject* me_str_from_long(long value) {
 
     obj->ob_length = written;
     obj->ob_bytelength = written;
-    obj->ob_value[written] = '\0';
 
     return (MEObject*)obj;
 }
@@ -74,7 +74,7 @@ MEObject* me_str_from_ulong(unsigned long value) {
     }
 
     int written = snprintf(obj->ob_value, 32, "%lu", value);
-    if (written < 0 || written >= 31) {
+    if (written < 0 || written >= 32) {
         free(obj->ob_value);
         free(obj);
         return NULL;
@@ -82,7 +82,6 @@ MEObject* me_str_from_ulong(unsigned long value) {
 
     obj->ob_length = written;
     obj->ob_bytelength = written;
-    obj->ob_value[written] = '\0';
 
     return (MEObject*)obj;
 }
@@ -102,7 +101,7 @@ MEObject* me_str_from_double(double value) {
     }
 
     int written = snprintf(obj->ob_value, 32, "%.2f", value);
-    if (written < 0 || written >= 31) {
+    if (written < 0 || written >= 32) {
         free(obj->ob_value);
         free(obj);
         return NULL;
@@ -110,7 +109,6 @@ MEObject* me_str_from_double(double value) {
 
     obj->ob_length = written;
     obj->ob_bytelength = written;
-    obj->ob_value[written] = '\0';
 
     return (MEObject*)obj;
 }
@@ -140,7 +138,64 @@ static MEObject* str_cmp(MEStrObject* v, MEStrObject* w, MECmpOp op) {
     }
 }
 
-METypeObject me_type_str = {
+static MEObject* str_nb_add(MEObject* v, MEObject* w) {
+    if (!me_str_check(v) || !me_str_check(w))
+        return me_error_typemismatch;
+
+    MEStrObject* str_v = (MEStrObject*)v;
+    MEStrObject* str_w = (MEStrObject*)w;
+
+    MEStrObject* new_str = (MEStrObject*)malloc(sizeof(MEStrObject));
+    if (!new_str)
+        return me_error_outofmemory;
+
+    new_str->ob_type = &me_type_str;
+    new_str->ob_refcount = 1;
+    new_str->ob_length = str_v->ob_length + str_w->ob_length;
+    new_str->ob_bytelength = str_v->ob_bytelength + str_w->ob_bytelength;
+    new_str->ob_value = (char*)malloc(new_str->ob_bytelength);
+    if (!new_str->ob_value) {
+        free(new_str);
+        return me_error_outofmemory;
+    }
+
+    memcpy(new_str->ob_value, str_v->ob_value, str_v->ob_bytelength);
+    memcpy(new_str->ob_value + str_v->ob_bytelength, str_w->ob_value, str_w->ob_bytelength);
+
+    return (MEObject*)new_str;
+}
+
+static MEObject* str_nb_mul(MEObject* v, MEObject* w) {
+    if (!me_str_check(v) || !me_long_check(w))
+        return me_error_typemismatch;
+
+    MEStrObject* str_v = (MEStrObject*)v;
+    MELongObject* long_w = (MELongObject*)w;
+
+    if (long_w->ob_value < 0)
+        return me_error_typemismatch;
+
+    MEStrObject* new_str = (MEStrObject*)malloc(sizeof(MEStrObject));
+    if (!new_str)
+        return me_error_outofmemory;
+
+    new_str->ob_type = &me_type_str;
+    new_str->ob_refcount = 1;
+    new_str->ob_length = str_v->ob_length * long_w->ob_value;
+    new_str->ob_bytelength = str_v->ob_bytelength * long_w->ob_value;
+    new_str->ob_value = (char*)malloc(new_str->ob_bytelength);
+    if (!new_str->ob_value) {
+        free(new_str);
+        return me_error_outofmemory;
+    }
+
+    for (size_t i = 0; i < long_w->ob_value; i++)
+        memcpy(new_str->ob_value + i * str_v->ob_bytelength, str_v->ob_value, str_v->ob_bytelength);
+
+    return (MEObject*)new_str;
+}
+
+static METypeObject me_type_str = {
     .tp_name = "str",
     .tp_sizeof = sizeof(MEStrObject),
     .tp_dealloc = (fn_destructor)str_dealloc,

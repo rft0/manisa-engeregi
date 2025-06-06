@@ -12,6 +12,10 @@ typedef struct {
     size_t ob_bytelength;
 } MEStrObject;
 
+static inline int me_str_check(MEObject* obj) {
+    return ME_TYPE_CHECK(obj, &me_type_str);
+}
+
 MEObject* me_str_from_str(const char* str);
 MEObject* me_str_from_long(long value);
 MEObject* me_str_from_ulong(unsigned long value);

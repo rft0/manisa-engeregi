@@ -4,6 +4,7 @@
 
 #include "strobject.h"
 #include "boolobject.h"
+#include "errorobject.h"
 
 MEObject* me_long_from_long(long value) {
     MELongObject* obj = (MELongObject*)malloc(sizeof(MELongObject));
@@ -74,6 +75,56 @@ static MEObject* long_cmp(MELongObject* v, MELongObject* w, MECmpOp op) {
     }
 }
 
+static MEObject* long_nb_add(MELongObject* v, MELongObject* w) {
+    return me_long_from_long(v->ob_value + w->ob_value);
+}
+
+static MEObject* long_nb_sub(MELongObject* v, MELongObject* w) {
+    return me_long_from_long(v->ob_value - w->ob_value);
+}
+
+static MEObject* long_nb_mul(MELongObject* v, MELongObject* w) {
+    return me_long_from_long(v->ob_value * w->ob_value);
+}
+
+static MEObject* long_nb_div(MELongObject* v, MELongObject* w) {
+    if (w->ob_value == 0)
+        return me_error_divisionbyzero;
+
+    return me_long_from_long(v->ob_value / w->ob_value);
+}
+
+static MEObject* long_nb_mod(MELongObject* v, MELongObject* w) {
+    if (w->ob_value == 0)
+        return me_error_divisionbyzero;
+
+    return me_long_from_long(v->ob_value % w->ob_value);
+}
+
+static MEObject* long_nb_bit_and(MELongObject* v, MELongObject* w) {
+    return me_long_from_long(v->ob_value & w->ob_value);
+}
+
+static MEObject* long_nb_bit_or(MELongObject* v, MELongObject* w) {
+    return me_long_from_long(v->ob_value | w->ob_value);
+}
+
+static MEObject* long_nb_bit_xor(MELongObject* v, MELongObject* w) {
+    return me_long_from_long(v->ob_value ^ w->ob_value);
+}
+
+static MEObject* long_nb_bit_not(MELongObject* v) {
+    return me_long_from_long(~v->ob_value);
+}
+
+static MEObject* long_nb_lshift(MELongObject* v, MELongObject* w) {
+    return me_long_from_long(v->ob_value << w->ob_value);
+}
+
+static MEObject* long_nb_rshift(MELongObject* v, MELongObject* w) {
+    return me_long_from_long(v->ob_value >> w->ob_value);
+}
+
 METypeObject me_type_long = {
     .tp_name = "long",
     .tp_sizeof = sizeof(MELongObject),
@@ -82,17 +133,17 @@ METypeObject me_type_long = {
     .tp_bool = (fn_bool)long_bool,
     .tp_call = NULL,
 
-    .tp_nb_add = NULL,
-    .tp_nb_sub = NULL,
-    .tp_nb_mul = NULL,
-    .tp_nb_div = NULL,
-    .tp_nb_mod = NULL,
-    .tp_nb_bit_and = NULL,
-    .tp_nb_bit_or = NULL,
-    .tp_nb_bit_xor = NULL,
-    .tp_nb_bit_not = NULL,
-    .tp_nb_lshift = NULL,
-    .tp_nb_rshift = NULL,
+    .tp_nb_add = (fn_nb_add)long_nb_add,
+    .tp_nb_sub = (fn_nb_sub)long_nb_sub,
+    .tp_nb_mul = (fn_nb_mul)long_nb_mul,
+    .tp_nb_div = (fn_nb_div)long_nb_div,
+    .tp_nb_mod = (fn_nb_mod)long_nb_mod,
+    .tp_nb_bit_and = (fn_nb_bit_and)long_nb_bit_and,
+    .tp_nb_bit_or = (fn_nb_bit_or)long_nb_bit_or,
+    .tp_nb_bit_xor = (fn_nb_bit_xor)long_nb_bit_xor,
+    .tp_nb_bit_not = (fn_nb_bit_not)long_nb_bit_not,
+    .tp_nb_lshift = (fn_nb_lshift)long_nb_lshift,
+    .tp_nb_rshift = (fn_nb_rshift)long_nb_rshift,
 
     .tp_cmp = (fn_cmp)long_cmp,
 };

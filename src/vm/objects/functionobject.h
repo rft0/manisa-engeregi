@@ -11,4 +11,8 @@ typedef struct {
     MEStrObject* ob_name;
 } MEFunctionObject;
 
+static inline int me_function_check(MEObject* obj) {
+    return ME_TYPE_CHECK(obj, &me_type_function);
+}
+
 #endif

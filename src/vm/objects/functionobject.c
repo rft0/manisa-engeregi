@@ -2,6 +2,7 @@
 
 #include "noneobject.h"
 #include "boolobject.h"
+#include "errorobject.h"
 
 static MEObject* function_str(MEFunctionObject* obj) {
     return (MEObject*)obj->ob_name;
@@ -13,6 +14,17 @@ static MEObject* function_bool(MEFunctionObject* obj) {
 
 static MEObject* function_call(MEFunctionObject* obj, MEObject** args, size_t nargs) {
     return me_none;
+}
+
+static MEObject* function_cmp(MEFunctionObject* v, MEFunctionObject* w, MECmpOp op) {
+    switch (op) {
+        case ME_CMP_EQ: return v == w ? me_true : me_false;
+        case ME_CMP_NEQ: return v != w ? me_true : me_false;
+        case ME_CMP_LT: return me_error_notimplemented;
+        case ME_CMP_LTE: return me_error_notimplemented;
+        case ME_CMP_GT: return me_error_notimplemented;
+        case ME_CMP_GTE: return me_error_notimplemented;
+    }
 }
 
 METypeObject me_type_function = {
@@ -35,5 +47,5 @@ METypeObject me_type_function = {
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
 
-    .tp_cmp = NULL
+    .tp_cmp = (fn_cmp)function_cmp,
 };

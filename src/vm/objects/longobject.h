@@ -10,6 +10,10 @@ typedef struct {
     long ob_value;
 } MELongObject;
 
+static inline int me_long_check(MEObject* obj) {
+    return ME_TYPE_CHECK(obj, &me_type_long);
+}
+
 MEObject* me_long_from_long(long value);
 MEObject* me_long_from_ulong(unsigned long value);
 MEObject* me_long_from_str(const char* str);

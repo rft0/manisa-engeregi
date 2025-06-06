@@ -1,9 +1,11 @@
 #include "floatobject.h"
 
 #include <stdlib.h>
+#include <math.h>
 
-#include "strobject.h"
+#include "errorobject.h"
 #include "boolobject.h"
+#include "strobject.h"
 
 MEObject* me_float_from_double(double value) {
     MEFloatObject* obj = (MEFloatObject*)malloc(sizeof(MEFloatObject));
@@ -87,6 +89,32 @@ static MEObject* float_cmp(MEFloatObject* v, MEFloatObject* w, MECmpOp op) {
     }
 }
 
+static MEObject* float_nb_add(MEFloatObject* v, MEFloatObject* w) {
+    return me_float_from_double(v->ob_value + w->ob_value);
+}
+
+static MEObject* float_nb_sub(MEFloatObject* v, MEFloatObject* w) {
+    return me_float_from_double(v->ob_value - w->ob_value);
+}
+
+static MEObject* float_nb_mul(MEFloatObject* v, MEFloatObject* w) {
+    return me_float_from_double(v->ob_value * w->ob_value);
+}
+
+static MEObject* float_nb_div(MEFloatObject* v, MEFloatObject* w) {
+    if (w->ob_value == 0.0)
+        return me_error_divisionbyzero;
+
+    return me_float_from_double(v->ob_value / w->ob_value);
+}
+
+static MEObject* float_nb_mod(MEFloatObject* v, MEFloatObject* w) {
+    if (w->ob_value == 0.0)
+        return me_error_divisionbyzero;
+
+    return me_float_from_double(fmod(v->ob_value, w->ob_value));
+}
+
 METypeObject me_type_float = {
     .tp_name = "float",
     .tp_sizeof = sizeof(MEFloatObject),
@@ -94,11 +122,11 @@ METypeObject me_type_float = {
     .tp_str = (fn_str)float_str,
     .tp_bool = (fn_bool)float_bool,
 
-    .tp_nb_add = NULL,
-    .tp_nb_sub = NULL,
-    .tp_nb_mul = NULL,
-    .tp_nb_div = NULL,
-    .tp_nb_mod = NULL,
+    .tp_nb_add = (fn_nb_add)float_nb_add,
+    .tp_nb_sub = (fn_nb_sub)float_nb_sub,
+    .tp_nb_mul = (fn_nb_mul)float_nb_mul,
+    .tp_nb_div = (fn_nb_div)float_nb_div,
+    .tp_nb_mod = (fn_nb_mod)float_nb_mod,
     .tp_nb_bit_and = NULL,
     .tp_nb_bit_or = NULL,
     .tp_nb_bit_xor = NULL,
