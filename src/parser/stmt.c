@@ -97,20 +97,20 @@ Stmt* stmt_new_if(Expr* condition, Stmt** then_branch, Stmt* else_branch, int li
     return s;
 }
 
-Stmt* stmt_new_method_decl(StringView name, Expr** params, Stmt** body, int line, int col) {
-    Stmt* s = stmt_new(STMT_METHOD_DECL, line, col);
+Stmt* stmt_new_function_decl(StringView name, Expr** params, Stmt** body, int line, int col) {
+    Stmt* s = stmt_new(STMT_FUNCTION_DECL, line, col);
     if (!s)
         return NULL;
 
-    s->method_decl = malloc(sizeof(MethodDeclStmt));
-    if (!s->method_decl) {
+    s->function_decl = malloc(sizeof(FunctionDeclStmt));
+    if (!s->function_decl) {
         free(s);
         return NULL;
     }
 
-    s->method_decl->name = name;
-    s->method_decl->params = params;
-    s->method_decl->body = body;
+    s->function_decl->name = name;
+    s->function_decl->params = params;
+    s->function_decl->body = body;
 
     return s;
 }
@@ -182,12 +182,12 @@ void stmt_free(Stmt* s) {
             stmt_free(s->if_stmt->else_branch);
             free(s->if_stmt);
             break;
-        case STMT_METHOD_DECL:
-            darray_for(s->method_decl->params) expr_free(s->method_decl->params[__i]);
-            darray_free(s->method_decl->params);
-            darray_for(s->method_decl->body) stmt_free(s->method_decl->body[__i]);
-            darray_free(s->method_decl->body);
-            free(s->method_decl);
+        case STMT_FUNCTION_DECL:
+            darray_for(s->function_decl->params) expr_free(s->function_decl->params[__i]);
+            darray_free(s->function_decl->params);
+            darray_for(s->function_decl->body) stmt_free(s->function_decl->body[__i]);
+            darray_free(s->function_decl->body);
+            free(s->function_decl);
             break;
         case STMT_RETURN:
             expr_free(s->return_stmt->value);
@@ -249,17 +249,17 @@ void stmt_dump(Stmt* s) {
             stmt_dump(s->if_stmt->else_branch);
             printf(")\n");
             break;
-        case STMT_METHOD_DECL:
-            printf("MethodDecl(%.*s, [", (int)s->method_decl->name.len, s->method_decl->name.data);
-            for (size_t i = 0; i < darray_size(s->method_decl->params); ++i) {
-                expr_dump(s->method_decl->params[i]);
-                if (i < darray_size(s->method_decl->params) - 1)
+        case STMT_FUNCTION_DECL:
+            printf("MethodDecl(%.*s, [", (int)s->function_decl->name.len, s->function_decl->name.data);
+            for (size_t i = 0; i < darray_size(s->function_decl->params); ++i) {
+                expr_dump(s->function_decl->params[i]);
+                if (i < darray_size(s->function_decl->params) - 1)
                     printf(", ");
             }
             printf("], [");
-            for (size_t i = 0; i < darray_size(s->method_decl->body); ++i) {
-                stmt_dump(s->method_decl->body[i]);
-                if (i < darray_size(s->method_decl->body) - 1)
+            for (size_t i = 0; i < darray_size(s->function_decl->body); ++i) {
+                stmt_dump(s->function_decl->body[i]);
+                if (i < darray_size(s->function_decl->body) - 1)
                     printf(", ");
             }
             printf("])\n");

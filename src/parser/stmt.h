@@ -10,7 +10,7 @@ typedef enum {
     STMT_EXPR,
     STMT_WHILE,
     STMT_IF,
-    STMT_METHOD_DECL,
+    STMT_FUNCTION_DECL,
     STMT_RETURN,
     STMT_BREAK,
     STMT_CONTINUE,
@@ -118,7 +118,7 @@ typedef struct Stmt {
         struct Expr* expr_stmt;
         struct WhileStmt* while_stmt;
         struct IfStmt* if_stmt;
-        struct MethodDeclStmt* method_decl;
+        struct FunctionDeclStmt* function_decl;
         struct ReturnStmt* return_stmt;
         void* dummy; // For statements like break or continue
     };
@@ -148,11 +148,11 @@ typedef struct IfStmt {
     Stmt* else_branch;
 } IfStmt;
 
-typedef struct MethodDeclStmt {
+typedef struct FunctionDeclStmt {
     StringView name;
     Expr** params;
     Stmt** body;
-} MethodDeclStmt;
+} FunctionDeclStmt;
 
 typedef struct ReturnStmt {
     Expr* value;
@@ -164,7 +164,7 @@ Stmt* stmt_new_decl(StringView name, Expr* initializer, int is_const, int line, 
 Stmt* stmt_new_expr(Expr* expr, int line, int col);
 Stmt* stmt_new_while(Expr* condition, Stmt** body, int line, int col);
 Stmt* stmt_new_if(Expr* condition, Stmt** then_branch, Stmt* else_branch, int line, int col);
-Stmt* stmt_new_method_decl(StringView name, Expr** args, Stmt** body, int line, int col);
+Stmt* stmt_new_function_decl(StringView name, Expr** args, Stmt** body, int line, int col);
 Stmt* stmt_new_return(Expr* value, int line, int col);
 Stmt* stmt_new_break(int line, int col);
 Stmt* stmt_new_continue(int line, int col);

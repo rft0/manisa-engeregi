@@ -512,7 +512,7 @@ static Stmt* parse_if(Parser* parser) {
     return stmt_new_if(condition, then_branch, else_branch, parser->c->line, parser->c->col);
 }
 
-static Stmt* parse_method_decl(Parser* parser) {
+static Stmt* parse_function_decl(Parser* parser) {
     parser_advance(parser);
 
     StringView name = parser->c->value;
@@ -533,7 +533,7 @@ static Stmt* parse_method_decl(Parser* parser) {
     parser_expect(parser, TOKEN_RPAREN, "Expected ')' after parameter list");
     Stmt** body = parse_helper_compound(parser);
 
-    return stmt_new_method_decl(name, params, body, parser->c->line, parser->c->col);
+    return stmt_new_function_decl(name, params, body, parser->c->line, parser->c->col);
 }
 
 static Stmt* parse_return(Parser* parser) {
@@ -570,8 +570,8 @@ static Stmt* parse_stmt(Parser* parser) {
             return parse_while(parser);
         case TOKEN_KW_IF:
             return parse_if(parser);
-        case TOKEN_KW_METHOD:
-            return parse_method_decl(parser);
+        case TOKEN_KW_FUNCTION:
+            return parse_function_decl(parser);
         case TOKEN_KW_RETURN:
             return parse_return(parser);
         case TOKEN_KW_BREAK:

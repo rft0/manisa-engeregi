@@ -7,7 +7,7 @@
 #define KW_IF           "şayet"
 #define KW_ELSE         "değilse"
 #define KW_WHILE        "madem"
-#define KW_METHOD       "marifet"
+#define KW_FUNCTION       "marifet"
 #define KW_RETURN       "tebliğ"
 #define KW_BREAK        "yeter"
 #define KW_CONTINUE     "sıradaki"
@@ -25,7 +25,7 @@ void lut_init() {
     hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_IF), TOKEN_KW_IF);
     hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_ELSE), TOKEN_KW_ELSE);
     hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_WHILE), TOKEN_KW_WHILE);
-    hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_METHOD), TOKEN_KW_METHOD);
+    hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_FUNCTION), TOKEN_KW_FUNCTION);
     hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_RETURN), TOKEN_KW_RETURN);
     hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_BREAK), TOKEN_KW_BREAK);
     hashmap_set(lut_kw_to_token, hashmap_lit_str(KW_CONTINUE), TOKEN_KW_CONTINUE);
@@ -114,7 +114,7 @@ const char* lut_token_to_str[] = {
     [TOKEN_KW_IF] = "KW_IF",
     [TOKEN_KW_ELSE] = "KW_ELSE",
     [TOKEN_KW_WHILE] = "KW_WHILE",
-    [TOKEN_KW_METHOD] = "KW_METHOD",
+    [TOKEN_KW_FUNCTION] = "KW_FUNCTION",
     [TOKEN_KW_RETURN] = "KW_RETURN",
     [TOKEN_KW_BREAK] = "KW_BREAK",
     [TOKEN_KW_CONTINUE] = "KW_CONTINUE",

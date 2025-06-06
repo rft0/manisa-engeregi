@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Byte code generation here after bytecode generation we can free the tokens and stmts 
-    MECodeObject* co = co_new(stmts);
+    // MECodeObject* co = co_new(stmts);
     
     darray_for(tokens) free(tokens[__i]);
     darray_free(tokens);

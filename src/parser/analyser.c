@@ -37,7 +37,7 @@ typedef struct Analyser {
 
     Scope* current_scope;
     int inside_loop;
-    int inside_method;
+    int inside_function;
 } Analyser;
 
 // Forward decls
@@ -51,7 +51,7 @@ static void analyse_decl(Analyser* analyser, Stmt* stmt);
 static void analyse_expr_stmt(Analyser* analyser, Stmt* stmt);
 static void analyse_if(Analyser* analyser, Stmt* stmt);
 static void analyse_while(Analyser* analyser, Stmt* stmt);
-static void analyse_method_decl(Analyser* analyser, Stmt* stmt);
+static void analyse_function_decl(Analyser* analyser, Stmt* stmt);
 static void analyse_return(Analyser* analyser, Stmt* stmt);
 static void analyse_break_continue(Analyser* analyser, Stmt* stmt);
 
@@ -72,7 +72,7 @@ static void analyser_init(Analyser* analyser, const char* filename, Stmt** stmts
     analyser->index = 0;
     analyser->current_scope = NULL;
     analyser->inside_loop = 0;
-    analyser->inside_method = 0;
+    analyser->inside_function = 0;
     
     scope_enter(analyser);
 }
@@ -209,15 +209,15 @@ static void analyse_while(Analyser* analyser, Stmt* stmt) {
     analyser->inside_loop--;
 }
 
-static void analyse_method_decl(Analyser* analyser, Stmt* stmt) {
+static void analyse_function_decl(Analyser* analyser, Stmt* stmt) {
     scope_enter(analyser);
-    analyser->inside_method++;
+    analyser->inside_function++;
 
-    if (analyser->inside_method > 1)
+    if (analyser->inside_function > 1)
         diags_new_diag(DIAG_SEMANTIC, DIAG_ERROR, analyser->filename, stmt->line, stmt->col, "Nested method declarations are not allowed");
 
-    for (int i = 0; i < darray_size(stmt->method_decl->params); i++) {
-        Expr* param = stmt->method_decl->params[i];
+    for (int i = 0; i < darray_size(stmt->function_decl->params); i++) {
+        Expr* param = stmt->function_decl->params[i];
         if (param->kind == EXPR_VARIABLE) {
             Symbol* symbol = symbol_new(param->variable->name, 0, param->line, param->col);
             symbol->is_initialized = 1; // Parameters are always initialized
@@ -232,16 +232,16 @@ static void analyse_method_decl(Analyser* analyser, Stmt* stmt) {
         }
     }
 
-    for (int i = 0; i < darray_size(stmt->method_decl->body); i++)
-        analyse_stmt(analyser, stmt->method_decl->body[i]);
+    for (int i = 0; i < darray_size(stmt->function_decl->body); i++)
+        analyse_stmt(analyser, stmt->function_decl->body[i]);
 
     
-    analyser->inside_method--;
+    analyser->inside_function--;
     scope_exit(analyser);
 }
 
 static void analyse_return(Analyser* analyser, Stmt* stmt) {
-    if (!analyser->inside_method) {
+    if (!analyser->inside_function) {
         diags_new_diag(DIAG_SEMANTIC, DIAG_ERROR, analyser->filename, 
             stmt->line, stmt->col, "Return statement outside of method");
     }
@@ -279,8 +279,8 @@ static void analyse_stmt(Analyser* analyser, Stmt* stmt) {
         case STMT_WHILE:
             analyse_while(analyser, stmt);
             break;
-        case STMT_METHOD_DECL:
-            analyse_method_decl(analyser, stmt);
+        case STMT_FUNCTION_DECL:
+            analyse_function_decl(analyser, stmt);
             break;
         case STMT_RETURN:
             analyse_return(analyser, stmt);
