@@ -1,7 +1,33 @@
 #include "strobject.h"
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "../../utils/utf8.h"
+
+MEObject* me_str_from_str(const char* str) {
+    MEStrObject* obj = (MEStrObject*)malloc(sizeof(MEStrObject));
+    if (!obj)
+        return NULL;
+
+    obj->ob_type = &me_type_str;
+    obj->ob_refcount = 1;
+
+    obj->ob_length = utf8_strlen(str);
+    obj->ob_bytelength = utf8_strsize(str);
+
+    obj->ob_value = (char*)malloc(obj->ob_bytelength + 1);
+    if (!obj->ob_value) {
+        free(obj);
+        return NULL;
+    }
+
+    memcpy(obj->ob_value, str, obj->ob_bytelength);
+    obj->ob_value[obj->ob_bytelength] = '\0';
+
+    return (MEObject*)obj;
+}
 
 MEObject* me_str_from_long(long value) {
     MEStrObject* obj = (MEStrObject*)malloc(sizeof(MEStrObject));

@@ -10,10 +10,9 @@ typedef struct {
     char* ob_value;
     size_t ob_length;
     size_t ob_bytelength;
-    size_t ob_allocated;
 } MEStrObject;
 
-MEObject* me_str_from_str(long value);
+MEObject* me_str_from_str(const char* str);
 MEObject* me_str_from_long(long value);
 MEObject* me_str_from_ulong(unsigned long value);
 MEObject* me_str_from_double(double value);
