@@ -3,6 +3,9 @@
 
 #include "../object.h"
 
+void me_set_error(MEObject* error, const char* msg);
+MEObject* me_get_error();
+
 extern MEObject* me_error_divisionbyzero;
 extern MEObject* me_error_typemismatch;
 extern MEObject* me_error_notimplemented;

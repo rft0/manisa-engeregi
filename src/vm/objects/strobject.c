@@ -140,7 +140,7 @@ static MEObject* str_cmp(MEStrObject* v, MEStrObject* w, MECmpOp op) {
 
 static MEObject* str_nb_add(MEObject* v, MEObject* w) {
     if (!me_str_check(v) || !me_str_check(w)) {
-        // SET GLOBAL ERROR TO me_error_typemismatch
+        me_set_error(me_error_typemismatch, "Type mismatch in string addition");
         return NULL;
     }
 
@@ -149,7 +149,7 @@ static MEObject* str_nb_add(MEObject* v, MEObject* w) {
 
     MEStrObject* new_str = (MEStrObject*)malloc(sizeof(MEStrObject));
     if (!new_str) {
-        // SET GLOBAL ERROR TO me_error_outofmemory
+        me_set_error(me_error_outofmemory, "Out of memory while adding strings");
         return NULL;
     }
 
@@ -160,7 +160,7 @@ static MEObject* str_nb_add(MEObject* v, MEObject* w) {
     new_str->ob_value = (char*)malloc(new_str->ob_bytelength);
     if (!new_str->ob_value) {
         free(new_str);
-        // SET GLOBAL ERROR TO me_error_outofmemory
+        me_set_error(me_error_outofmemory, "Out of memory while adding strings");
         return NULL;
     }
 
@@ -182,7 +182,7 @@ static MEObject* str_nb_mul(MEObject* v, MEObject* w) {
 
     MEStrObject* new_str = (MEStrObject*)malloc(sizeof(MEStrObject));
     if (!new_str) {
-        // SET GLOBAL ERROR TO me_error_outofmemory
+        me_set_error(me_error_outofmemory, "Out of memory while multiplying string");
         return NULL;
     }
 
@@ -193,7 +193,7 @@ static MEObject* str_nb_mul(MEObject* v, MEObject* w) {
     new_str->ob_value = (char*)malloc(new_str->ob_bytelength);
     if (!new_str->ob_value) {
         free(new_str);
-        // SET GLOBAL ERROR TO me_error_outofmemory
+        me_set_error(me_error_outofmemory, "Out of memory while multiplying string");
         return NULL;
     }
 

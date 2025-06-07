@@ -2,10 +2,25 @@
 
 #include "strobject.h"
 
+struct {
+    const char* error_msg;
+    MEObject* error_obj;
+} me_global_error = {NULL, NULL}; 
+
 METypeObject me_type_error_divisionbyzero;
 METypeObject me_type_error_typemismatch;
 METypeObject me_type_error_notimplemented;
 METypeObject me_type_error_outofmemory;
+
+void me_set_error(MEObject* error, const char* msg) {
+    me_global_error.error_msg = msg;
+    me_global_error.error_obj = error;
+}
+
+MEObject* me_get_error() {
+    return me_global_error.error_obj;
+}
+
 
 struct {
     ME_OBJHEAD

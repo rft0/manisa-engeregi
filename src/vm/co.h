@@ -16,3 +16,19 @@ typedef struct MECodeObject {
 MECodeObject* co_new(Stmt** stmts);
 
 #endif
+
+/*
+BYTECODE:
+
+LL idx                      - Load Literal
+LG idx                      - Load Global
+SG idx                      - Store Global
+LV idx                      - Load Variable
+SV idx                      - Store Variable
+BIN op                      - Binary Operation with op
+UN op                       - Unary Operation with op
+CALL n                      - Call Function with n arguments
+
+
+
+*/

@@ -113,7 +113,7 @@ MEObject* long_nb_div(MEObject* v, MEObject* w) {
     MELongObject* lw = (MELongObject*)w;
 
     if (lw->ob_value == 0) {
-        // SET GLOBAL ERROR TO me_error_divisionbyzero
+        me_set_error(me_error_divisionbyzero, "Division by zero in modulo operation");
         return NULL;
     }
 
@@ -128,7 +128,7 @@ MEObject* long_nb_mod(MEObject* v, MEObject* w) {
     MELongObject* lw = (MELongObject*)w;
 
     if (lw->ob_value == 0) {
-        // SET GLOBAL ERROR TO me_error_divisionbyzero
+        me_set_error(me_error_divisionbyzero, "Division by zero in modulo operation");
         return NULL;
     }
 

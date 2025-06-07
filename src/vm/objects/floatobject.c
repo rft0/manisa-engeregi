@@ -79,14 +79,31 @@ static MEObject* float_bool(MEFloatObject* obj) {
     return obj->ob_value != 0.0 ? me_true : me_false;
 }
 
-static MEObject* float_cmp(MEFloatObject* v, MEFloatObject* w, MECmpOp op) {
+static MEObject* float_cmp(MEObject* v, MEObject* w, MECmpOp op) {
+    double lhs, rhs;
+
+    if (me_float_check(v))
+        lhs = ((MEFloatObject*)v)->ob_value;
+    else
+        return me_error_notimplemented;
+
+    if (me_float_check(w))
+        rhs = ((MEFloatObject*)w)->ob_value;
+    else if (me_long_check(w))
+        rhs = (double)((MELongObject*)w)->ob_value;
+    else
+        return me_error_notimplemented;
+
+    double lhv = ((MEFloatObject*)v)->ob_value;
+    double rhv = ((MEFloatObject*)w)->ob_value;
+
     switch (op) {
-        case ME_CMP_EQ: return v->ob_value == w->ob_value ? me_true : me_false;
-        case ME_CMP_NEQ: return v->ob_value != w->ob_value ? me_true : me_false;
-        case ME_CMP_LT: return v->ob_value < w->ob_value ? me_true : me_false;
-        case ME_CMP_LTE: return v->ob_value <= w->ob_value ? me_true : me_false;
-        case ME_CMP_GT: return v->ob_value > w->ob_value ? me_true : me_false;
-        case ME_CMP_GTE: return v->ob_value >= w->ob_value ? me_true : me_false;
+        case ME_CMP_EQ: return lhv == rhv ? me_true : me_false;
+        case ME_CMP_NEQ: return lhv != rhv ? me_true : me_false;
+        case ME_CMP_LT: return lhv < rhv ? me_true : me_false;
+        case ME_CMP_LTE: return lhv <= rhv ? me_true : me_false;
+        case ME_CMP_GT: return lhv > rhv ? me_true : me_false;
+        case ME_CMP_GTE: return lhv >= rhv ? me_true : me_false;
     }
 }
 
@@ -120,13 +137,13 @@ static MEObject* float_nb_mul(MEObject* v, MEObject* w) {
 static MEObject* float_nb_div(MEObject* v, MEObject* w) {
     if (me_float_check(w)) {
         if (((MEFloatObject*)w)->ob_value == 0.0) {
-            // SET GLOBAL ERROR TO me_error_divisionbyzero
+            me_set_error(me_error_divisionbyzero, "Division by zero in float division");
             return NULL;
         }
         return me_float_from_double(((MEFloatObject*)v)->ob_value / ((MEFloatObject*)w)->ob_value);
     } else if (me_long_check(w)) {
         if (((MELongObject*)w)->ob_value == 0) {
-            // SET GLOBAL ERROR TO me_error_divisionbyzero
+            me_set_error(me_error_divisionbyzero, "Division by zero in float division");
             return NULL;
         }
         return me_float_from_double(((MEFloatObject*)v)->ob_value / (double)((MELongObject*)w)->ob_value);
@@ -138,13 +155,13 @@ static MEObject* float_nb_div(MEObject* v, MEObject* w) {
 static MEObject* float_nb_mod(MEObject* v, MEObject* w) {
     if (me_float_check(w)) {
         if (((MEFloatObject*)w)->ob_value == 0.0) {
-            // SET GLOBAL ERROR TO me_error_divisionbyzero
+            me_set_error(me_error_divisionbyzero, "Division by zero in modulo operation");
             return NULL;
         }
         return me_float_from_double(fmod(((MEFloatObject*)v)->ob_value, ((MEFloatObject*)w)->ob_value));
     } else if (me_long_check(w)) {
         if (((MELongObject*)w)->ob_value == 0) {
-            // SET GLOBAL ERROR TO me_error_divisionbyzero
+            me_set_error(me_error_divisionbyzero, "Division by zero in modulo operation");
             return NULL;
         }
         return me_float_from_double(fmod(((MEFloatObject*)v)->ob_value, (double)((MELongObject*)w)->ob_value));
