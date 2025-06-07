@@ -104,6 +104,9 @@ static MEObject* float_cmp(MEObject* v, MEObject* w, MECmpOp op) {
         case ME_CMP_LTE: return lhv <= rhv ? me_true : me_false;
         case ME_CMP_GT: return lhv > rhv ? me_true : me_false;
         case ME_CMP_GTE: return lhv >= rhv ? me_true : me_false;
+        default:
+            me_set_error(me_error_notimplemented, "Comparison operation not implemented for float");
+            return NULL;
     }
 }
 

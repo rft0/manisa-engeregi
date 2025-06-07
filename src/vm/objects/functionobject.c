@@ -24,6 +24,9 @@ static MEObject* function_cmp(MEFunctionObject* v, MEFunctionObject* w, MECmpOp 
         case ME_CMP_LTE: return me_error_notimplemented;
         case ME_CMP_GT: return me_error_notimplemented;
         case ME_CMP_GTE: return me_error_notimplemented;
+        default:
+            me_set_error(me_error_notimplemented, "Comparison operation not implemented for function");
+            return NULL;
     }
 }
 

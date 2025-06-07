@@ -1,9 +1,17 @@
-CC = gcc
+CC = clang
 CFLAGS = 
 
 SRC_DIR = src
 OBJ_DIR = obj
-SRCS = $(wildcard $(SRC_DIR)/*.c) $(wildcard $(SRC_DIR)/**/*.c)
+SRCS = \
+	$(wildcard $(SRC_DIR)/*.c) \
+	$(wildcard $(SRC_DIR)/parser/*.c) \
+	$(wildcard $(SRC_DIR)/utils/*.c) \
+	$(wildcard $(SRC_DIR)/diag/*.c) \
+	$(wildcard $(SRC_DIR)/vm/objects/*.c) \
+	$(wildcard $(SRC_DIR)/vm/*.c) \
+
+
 
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 

@@ -50,6 +50,7 @@ struct {
     .ob_refcount = 1,
 };
 
+MEObject* me_error_outofmemory = (MEObject*)&me_error_outofmemory_instance;
 MEObject* me_error_divisionbyzero = (MEObject*)&me_error_divisionbyzero_instance;
 MEObject* me_error_typemismatch = (MEObject*)&me_error_typemismatch_instance;
 MEObject* me_error_notimplemented = (MEObject*)&me_error_notimplemented_instance;

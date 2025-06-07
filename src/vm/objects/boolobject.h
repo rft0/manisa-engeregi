@@ -10,7 +10,7 @@ extern MEObject* me_false;
 
 typedef struct {
     ME_OBJHEAD
-    int ob_value;
+    long ob_value;
 } MEBoolObject;
 
 static inline int me_bool_check(MEObject* obj) {

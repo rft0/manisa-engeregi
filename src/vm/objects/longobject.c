@@ -64,14 +64,23 @@ static MEObject* long_bool(MELongObject* obj) {
     return obj->ob_value ? me_true : me_false;
 }
 
-MEObject* long_cmp(MELongObject* v, MELongObject* w, MECmpOp op) {
+MEObject* long_cmp(MEObject* v, MEObject* w, MECmpOp op) {
+    if (!me_long_check(v) || !me_long_check(w))
+        return me_error_notimplemented;
+
+    long lhs = ((MELongObject*)v)->ob_value;
+    long rhs = ((MELongObject*)w)->ob_value;
+
     switch (op) {
-        case ME_CMP_EQ: return v->ob_value == w->ob_value ? me_true : me_false;
-        case ME_CMP_NEQ: return v->ob_value != w->ob_value ? me_true : me_false;
-        case ME_CMP_LT: return v->ob_value < w->ob_value ? me_true : me_false;
-        case ME_CMP_LTE: return v->ob_value <= w->ob_value ? me_true : me_false;
-        case ME_CMP_GT: return v->ob_value > w->ob_value ? me_true : me_false;
-        case ME_CMP_GTE: return v->ob_value >= w->ob_value ? me_true : me_false;
+        case ME_CMP_EQ: return lhs == rhs ? me_true : me_false;
+        case ME_CMP_NEQ: return lhs != rhs ? me_true : me_false;
+        case ME_CMP_LT: return lhs < rhs ? me_true : me_false;
+        case ME_CMP_LTE: return lhs <= rhs ? me_true : me_false;
+        case ME_CMP_GT: return lhs > rhs ? me_true : me_false;
+        case ME_CMP_GTE: return lhs >= rhs ? me_true : me_false;
+        default:
+            me_set_error(me_error_notimplemented, "Comparison operation not implemented for long objects");
+            return NULL;
     }
 }
 

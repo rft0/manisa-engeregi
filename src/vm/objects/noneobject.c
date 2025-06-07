@@ -23,10 +23,9 @@ static MEObject* none_cmp(MENoneObject* v, MENoneObject* w, MECmpOp op) {
     switch (op) {
         case ME_CMP_EQ: return v == w ? me_true : me_false;
         case ME_CMP_NEQ: return v != w ? me_true : me_false;
-        case ME_CMP_LT: return me_error_notimplemented;
-        case ME_CMP_LTE: return me_error_notimplemented;
-        case ME_CMP_GT: return me_error_notimplemented;
-        case ME_CMP_GTE: return me_error_notimplemented;
+        default:
+            me_set_error(me_error_notimplemented, "Comparison operation not implemented for None");
+            return NULL;
     }
 }
 
