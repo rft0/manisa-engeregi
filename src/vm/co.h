@@ -13,13 +13,17 @@ typedef struct MECodeObject {
     uint8_t* co_bytecode;
     size_t co_size;
     size_t co_capacity;
-    HashMap* co_globals;
+    HashMap* co_h_globals;
+    HashMap* co_h_locals;
+    MEObject** co_consts;
     MEObject** co_locals;
     uint8_t* co_lnotab;
+    int in_function;
 } MECodeObject;
 
 typedef enum {
-    CO_OP_LOAD_LITERAL,
+    CO_OP_NOP,
+    CO_OP_LOAD_CONST,
     CO_OP_LOAD_GLOBAL,
     CO_OP_LOAD_VARIABLE,
     CO_OP_STORE_GLOBAL,
@@ -28,9 +32,19 @@ typedef enum {
     CO_OP_UNARY_OP,
     CO_OP_CALL_FUNCTION,
     CO_OP_RETURN,
+    CO_OP_POP,
+    CO_OP_JUMP,
+    CO_OP_JUMP_IF_FALSE,
+    CO_OP_JUMP_IF_TRUE,
+    CO_OP_MAKE_FUNCTION,
+    CO_OP_SETUP_LOOP,
+    CO_OP_BREAK_LOOP,
+    CO_OP_CONTINUE_LOOP,
 } MECodeOp;
 
 MECodeObject* co_new(Stmt** stmts);
+
+int lnotab_get_line_from_ip(uint8_t* lnotab, uint32_t ip);
 
 #endif
 

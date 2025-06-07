@@ -119,6 +119,10 @@ int hashmap_set(HashMap* map, const void* key, size_t key_len, uintptr_t value) 
     return 0;
 }
 
+size_t hashmap_size(HashMap* map) {
+    return map ? map->count : 0;
+}
+
 void hashmap_iterate(HashMap* map, hashmap_iterate_fn fn, void* user_data) {
     if (!map || !fn)
         return;
