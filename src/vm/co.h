@@ -17,11 +17,14 @@ typedef struct MECodeObject {
     HashMap* co_h_globals;
     HashMap* co_h_locals;
     MEObject** co_consts;
+    MEObject** co_globals;
     MEObject** co_locals;
     uint8_t* co_lnotab;
     int in_function;
     uint32_t loop_start;
     uint32_t loop_end_jump;
+    uint32_t loop_end_pos;
+    uint32_t* break_patches;
 } MECodeObject;
 
 typedef enum {
@@ -36,7 +39,7 @@ typedef enum {
     CO_OP_CALL_FUNCTION,
     CO_OP_RETURN,
     CO_OP_POP,
-    CO_OP_JUMP,
+    CO_OP_JUMP_REL,
     CO_OP_JUMP_IF_FALSE,
     CO_OP_JUMP_IF_TRUE,
     CO_OP_MAKE_FUNCTION,

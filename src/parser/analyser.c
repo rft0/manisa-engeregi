@@ -14,6 +14,7 @@ typedef struct Symbol {
     StringView name;
     int is_const;
     int is_initialized;
+    int nargs;
     int line;
     int col;
 } Symbol;
@@ -174,7 +175,8 @@ static void analyse_decl(Analyser* analyser, Stmt* stmt) {
         analyse_expr(analyser, stmt->decl_stmt->initializer, 1);
 
     Symbol* symbol = symbol_new(stmt->decl_stmt->name, stmt->decl_stmt->is_const, stmt->line, stmt->col);
-    symbol->is_initialized = stmt->decl_stmt->initializer != NULL;
+    // symbol->is_initialized = stmt->decl_stmt->initializer != NULL;
+    symbol->is_initialized = 1; // Declarations are always initialized with none even if there is no initializer
 
     if (!scope_define(analyser->current_scope, symbol)) {
         diags_new_diag(DIAG_SEMANTIC, DIAG_ERROR, analyser->filename, 
@@ -216,6 +218,29 @@ static void analyse_function_decl(Analyser* analyser, Stmt* stmt) {
 
     if (analyser->inside_function > 1)
         diags_new_diag(DIAG_SEMANTIC, DIAG_ERROR, analyser->filename, stmt->line, stmt->col, "Nested method declarations are not allowed");
+
+
+    //! TODO: Check if function prototype already exists (name and nargs)
+    Symbol* existing = scope_lookup_current(analyser->current_scope->parent, stmt->function_decl->name);
+    if (existing && existing->nargs == darray_size(stmt->function_decl->params)) {
+        diags_new_diag(DIAG_SEMANTIC, DIAG_ERROR, analyser->filename, 
+            stmt->line, stmt->col,
+            "Function prototype for '%.*s' already defined", 
+            (int)stmt->function_decl->name.byte_len, stmt->function_decl->name.data,
+            existing->nargs);
+    } else {
+        // Define function in the outermost scope (global)
+        Symbol* func_symbol = symbol_new(
+            stmt->function_decl->name, 
+            0,  // not const 
+            stmt->line, 
+            stmt->col
+        );
+        func_symbol->nargs = darray_size(stmt->function_decl->params);
+        func_symbol->is_initialized = 1;  // Functions are always initialized
+        scope_define(analyser->current_scope->parent, func_symbol);
+    }
+    
 
     for (int i = 0; i < darray_size(stmt->function_decl->params); i++) {
         Expr* param = stmt->function_decl->params[i];

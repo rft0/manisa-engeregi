@@ -70,7 +70,7 @@ static void co_bc_opoperand(MECodeObject* co, uint8_t op, uint32_t operand, uint
     co->co_size += operand_size;
 }
 
-static uint16_t co_add_literal(MEObject** arr, LiteralExpr* literal) {
+static uint16_t co_add_literal(MECodeObject* co, LiteralExpr* literal) {
     MEObject* obj = NULL;
     
     switch (literal->type) {
@@ -114,8 +114,8 @@ static uint16_t co_add_literal(MEObject** arr, LiteralExpr* literal) {
     if (obj == NULL)
         return 0;
     
-    uint16_t idx = darray_size(arr);
-    darray_pushd(arr, obj);
+    uint16_t idx = darray_size(co->co_consts);
+    darray_pushd(co->co_consts, obj);
     return idx;
 }
 
@@ -126,7 +126,7 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
     uintptr_t idx = 0;
     switch (expr->kind) {
         case EXPR_LITERAL: {
-            idx = co_add_literal(co->co_consts, expr->literal);
+            idx = co_add_literal(co, expr->literal);
             co_bc_opoperand(co, CO_OP_LOAD_CONST, idx, 2);
             lnotab_forward(co, 3, expr->line);
             break;
@@ -142,7 +142,6 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
                 co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, idx, 2);
             }
             lnotab_forward(co, 3, expr->line);
-            printf("1\n");
             break;
         }
         case EXPR_BINARY: {
@@ -182,7 +181,7 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
 
             lnotab_forward(co, 3, expr->line);
 
-            for (size_t i = 0; i < darray_size(expr->call->args); i++)
+            for (int i = darray_size(expr->call->args) - 1; i >= 0; i--)
                 co_compile_expr(co, expr->call->args[i]);
 
             co_bc_opoperand(co, CO_OP_CALL_FUNCTION, darray_size(expr->call->args), 1);
@@ -252,32 +251,37 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
         }
         case STMT_IF: {
             co_compile_expr(co, stmt->if_stmt->condition);
-    
-            uint32_t then_branch_start = co->co_size;
-            co_bc_opoperand(co, CO_OP_JUMP_IF_FALSE, 0, 4);
-            lnotab_forward(co, 5, stmt->line);
+            
+            // Save position for the conditional jump
+            uint16_t then_branch_start = co->co_size;
+            co_bc_opoperand(co, CO_OP_JUMP_IF_FALSE, 0, 2);
+            lnotab_forward(co, 3, stmt->line);
 
+            // Compile the "then" branch
             for (size_t i = 0; i < darray_size(stmt->if_stmt->then_branch); i++) {
                 co_compile_stmt(co, stmt->if_stmt->then_branch[i]);
             }
 
-            uint32_t else_branch_start = 0;
+            uint16_t else_branch_start = 0;
             if (stmt->if_stmt->else_branch) {
+                // If there's an else branch, add a jump to skip it after "then"
                 else_branch_start = co->co_size;
-                co_bc_opoperand(co, CO_OP_JUMP, 0, 4);
-                lnotab_forward(co, 5, stmt->line);
+                co_bc_opoperand(co, CO_OP_JUMP_REL, 0, 2);
+                lnotab_forward(co, 3, stmt->line);
             }
 
-            uint32_t else_pos = co->co_size;
-            uint32_t if_offset = co->co_size - then_branch_start - 5;
-            memcpy(&co->co_bytecode[then_branch_start + 1], &if_offset, 4);
+            uint16_t else_pos = co->co_size;
+            uint16_t if_offset = else_pos - then_branch_start - 3;
+            memcpy(&co->co_bytecode[then_branch_start + 1], &if_offset, 2);
 
             if (stmt->if_stmt->else_branch) {
                 co_compile_stmt(co, stmt->if_stmt->else_branch);
-                uint16_t else_offset = co->co_size - else_branch_start - 4;
-                memcpy(&co->co_bytecode[else_branch_start + 1], &else_offset, 4);
+                
+                uint16_t end_pos = co->co_size;
+                uint16_t else_offset = end_pos - else_branch_start - 3;
+                memcpy(&co->co_bytecode[else_branch_start + 1], &else_offset, 2);
             }
-        
+
             break;
         }
         case STMT_FUNCTION_DECL: {
@@ -318,15 +322,15 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
             
             MEObject* func_obj = me_function_new(func_co, darray_size(stmt->function_decl->params));
             uint16_t func_idx = darray_size(co->co_consts);
-            darray_pushd(co->co_locals, func_obj);
+            darray_pushd(co->co_consts, func_obj);
             
-            co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, func_idx, 2);
+            co_bc_opoperand(co, CO_OP_LOAD_CONST, func_idx, 2);
             lnotab_forward(co, 3, stmt->line);
-            co_bc_opoperand(co, CO_OP_MAKE_FUNCTION, darray_size(stmt->function_decl->params), 2);
-            lnotab_forward(co, 3, stmt->line);
+            // co_bc_opoperand(co, CO_OP_MAKE_FUNCTION, darray_size(stmt->function_decl->params), 1);
+            // lnotab_forward(co, 2, stmt->line);
             
             // ADD FUNCTION TO ITS LOCALS FOR RECURSIVE CALLS
-            uint32_t name_idx;
+            uintptr_t name_idx;
             if (!co->in_function) {
                 if (hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
                     hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
@@ -335,7 +339,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                     hashmap_set(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t)name_idx);
                 }
                 co_bc_opoperand(co, CO_OP_STORE_GLOBAL, name_idx, 2);
-            } else {
+            } else { // This is not allowed and code should never reach here
                 if (hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
                     hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
                 } else {
@@ -354,40 +358,49 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
             co_compile_expr(co, stmt->while_stmt->condition);
             
             uint32_t jump_out_pos = co->co_size;
-            co_bc_opoperand(co, CO_OP_JUMP_IF_FALSE, 0, 4); // Placeholder
-            lnotab_forward(co, 5, stmt->line);
+            co_bc_opoperand(co, CO_OP_JUMP_IF_FALSE, 0, 2); // Placeholder
+            lnotab_forward(co, 3, stmt->line);
             
             int old_loop_start = co->loop_start;
             int old_loop_end_jump = co->loop_end_jump;
+            int old_loop_end_pos = co->loop_end_pos;
+
             co->loop_start = loop_start;
             co->loop_end_jump = jump_out_pos;
             
             for (size_t i = 0; i < darray_size(stmt->while_stmt->body); i++)
                 co_compile_stmt(co, stmt->while_stmt->body[i]);
 
-            co_bc_opoperand(co, CO_OP_JUMP, loop_start - co->co_size - 5, 4);
-            lnotab_forward(co, 5, stmt->line);
+            co_bc_opoperand(co, CO_OP_JUMP_REL, loop_start - co->co_size - 3, 2);
+            lnotab_forward(co, 3, stmt->line);
             
-            uint32_t end_pos = co->co_size;
-            uint16_t jump_out_offset = end_pos - jump_out_pos - 5;
-            memcpy(&co->co_bytecode[jump_out_pos + 1], &jump_out_offset, 4);
+            co->loop_end_pos = co->co_size;
+
+            uint16_t jump_out_offset = co->loop_end_pos - jump_out_pos - 3;
+            memcpy(&co->co_bytecode[jump_out_pos + 1], &jump_out_offset, 2);
+
+            for (size_t i = 0; i < darray_size(co->break_patches); i++) {
+                uint32_t break_pos = co->break_patches[i];
+                int16_t break_offset = co->loop_end_pos - break_pos - 3;
+                memcpy(&co->co_bytecode[break_pos + 1], &break_offset, 2);
+            }
             
+            // printf("Loop start: %u, end jump: %u, end pos: %u\n", co->loop_start, co->loop_end_jump, co->loop_end_pos);
             co->loop_start = old_loop_start;
             co->loop_end_jump = old_loop_end_jump;
+            co->loop_end_pos = old_loop_end_pos;
+
             
             break;
         }
-        case STMT_BREAK: {
-            uint32_t end_pos = co->co_size;
-            uint16_t break_offset = co->loop_end_jump - end_pos - 5;
-            co_bc_opoperand(co, CO_OP_JUMP, break_offset, 4);
-            lnotab_forward(co, 5, stmt->line);
+        case STMT_BREAK: {            
+            darray_push(co->break_patches, co->co_size);
+            co_bc_opoperand(co, CO_OP_JUMP_REL, 0xFFFF, 2); // 0 is not valid, if there is a loop in if statement it will be problematic
+            lnotab_forward(co, 3, stmt->line);
             break;
         }
         case STMT_CONTINUE: {
-            uint32_t current_pos = co->co_size;
-            uint16_t continue_offset = co->loop_start - current_pos - 3;
-            co_bc_opoperand(co, CO_OP_JUMP, continue_offset, 2);
+            co_bc_opoperand(co, CO_OP_JUMP_REL, co->loop_start - co->co_size - 3, 2);
             lnotab_forward(co, 3, stmt->line);
             break;
         }
@@ -401,80 +414,86 @@ void co_disasm(MECodeObject* co) {
         return;
 
     printf("Disassembling code object: %.*s\n", (int)utf8_strsize(co->co_name), co->co_name);
-    for (size_t i = 0; i < co->co_size; i++) {
-        uint8_t op = co->co_bytecode[i];
-        printf("%04zu: ", i);
+    uint32_t ip = 0;
+    while (ip < co->co_size)
+    {
+        uint8_t op = co->co_bytecode[ip];
+        printf("%04u: ", ip);
         
         switch (op) {
             case CO_OP_LOAD_CONST: {
                 printf("LOAD_CONST ");
-                uint16_t idx = *(uint16_t*)(co->co_bytecode + i + 1);
+                uint16_t idx = *(uint16_t*)(co->co_bytecode + ip + 1);
                 printf("%u\n", idx);
-                i += 2;
+                ip += 2;
                 break;
             }
             case CO_OP_LOAD_VARIABLE: {
                 printf("LOAD_VARIABLE ");
-                uint16_t idx = *(uint16_t*)(co->co_bytecode + i + 1);
+                uint16_t idx = *(uint16_t*)(co->co_bytecode + ip + 1);
                 printf("%u\n", idx);
-                i += 2;
+                ip += 2;
                 break;
             }
             case CO_OP_STORE_VARIABLE: {
                 printf("STORE_VARIABLE ");
-                uint16_t idx = *(uint16_t*)(co->co_bytecode + i + 1);
+                uint16_t idx = *(uint16_t*)(co->co_bytecode + ip + 1);
                 printf("%u\n", idx);
-                i += 2;
+                ip += 2;
                 break;
             }
             case CO_OP_STORE_GLOBAL: {
                 printf("STORE_GLOBAL ");
-                uint16_t idx = *(uint16_t*)(co->co_bytecode + i + 1);
+                uint16_t idx = *(uint16_t*)(co->co_bytecode + ip + 1);
                 printf("%u\n", idx);
-                i += 2;
+                ip += 2;
                 break;
             }
             case CO_OP_LOAD_GLOBAL: {
                 printf("LOAD_GLOBAL ");
-                uint16_t idx = *(uint16_t*)(co->co_bytecode + i + 1);
+                uint16_t idx = *(uint16_t*)(co->co_bytecode + ip + 1);
                 printf("%u\n", idx);
-                i += 2;
+                ip += 2;
                 break;
             }
             case CO_OP_CALL_FUNCTION:
                 printf("CALL_FUNCTION ");
-                uint8_t arg_count = co->co_bytecode[i + 1];
+                uint8_t arg_count = co->co_bytecode[ip + 1];
                 printf("%u\n", arg_count);
-                i++;
+                ip++;
                 break;
             case CO_OP_RETURN:
                 printf("RETURN\n");
                 break;
             case CO_OP_JUMP_IF_FALSE:
-            case CO_OP_JUMP:
-                printf("JUMP ");
-                uint32_t jump_offset = *(uint32_t*)(co->co_bytecode + i + 1);
-                printf("%u\n", jump_offset);
-                i += 4;
+                printf("JUMP_IF_FALSE ");
+                uint16_t jump_if_false_offset = *(uint16_t*)(co->co_bytecode + ip + 1);
+                printf("%u\n", jump_if_false_offset);
+                ip += 2;
                 break;
-
+            case CO_OP_JUMP_REL:
+                printf("JUMP_REL ");
+                int16_t jump_offset = *(int16_t*)(co->co_bytecode + ip + 1);
+                printf("%d\n", jump_offset);
+                ip += 2;
+                break;
             case CO_OP_MAKE_FUNCTION:
                 printf("MAKE_FUNCTION ");
-                uint8_t param_count = co->co_bytecode[i + 1];
+                uint8_t param_count = co->co_bytecode[ip + 1];
                 printf("%u\n", param_count);
-                i++;
+                ip++;
                 break;
             case CO_OP_UNARY_OP:
                 printf("UNARY_OP ");
-                uint8_t unary_op = co->co_bytecode[i + 1];
+                uint8_t unary_op = co->co_bytecode[ip + 1];
                 printf("%u\n", unary_op);
-                i++;
+                ip++;
                 break;
             case CO_OP_BINARY_OP:
                 printf("BINARY_OP ");
-                uint8_t binary_op = co->co_bytecode[i + 1];
+                uint8_t binary_op = co->co_bytecode[ip + 1];
                 printf("%u\n", binary_op);
-                i++;
+                ip++;
                 break;
             case CO_OP_POP:
                 printf("POP\n");
@@ -483,6 +502,8 @@ void co_disasm(MECodeObject* co) {
                 printf("UNKNOWN OP %u\n", op);
                 break;
         }
+
+        ip += 1;
     }    
 }
 
@@ -497,7 +518,6 @@ MECodeObject* co_new(const char* filename, Stmt** stmts) {
     co->co_consts = darray_new(MEObject*);
     co->co_locals = darray_new(MEObject*);
     darray_pushd(co->co_consts, me_none);
-    darray_pushd(co->co_locals, me_none);
     co->co_lnotab = darray_new(uint8_t);
     co->co_capacity = ME_CO_INITIAL_CAPACITY;
     co->co_bytecode = (uint8_t*)malloc(co->co_capacity);
@@ -506,6 +526,8 @@ MECodeObject* co_new(const char* filename, Stmt** stmts) {
     co->in_function = 0;
     co->loop_start = 0;
     co->loop_end_jump = 0;
+    co->loop_end_pos = 0;
+    co->break_patches = darray_new(uint32_t);
 
     for (size_t i = 0; i < darray_size(stmts); i++) {
         printf("Compiling statement %zu\n", i);
@@ -529,6 +551,9 @@ void co_free(MECodeObject* co) {
 
     if (co->co_bytecode)
         free(co->co_bytecode);
+
+    if (co->break_patches)
+        darray_free(co->break_patches);
 
     free(co);
 }
