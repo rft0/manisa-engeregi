@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
     // darray_for(tokens) token_dump(tokens[__i]);
 
     Stmt** stmts = parse(filename, tokens);
-    // darray_for(stmts) stmt_dump(stmts[__i]);
+    darray_for(stmts) stmt_dump(stmts[__i]);
     
     analyse(filename, stmts);
 

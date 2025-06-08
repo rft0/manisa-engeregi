@@ -8,6 +8,7 @@
 #include "../utils/str.h"
 
 #include "../diag/diag.h"
+#include "stmt.h"
 
 typedef struct Symbol {
     StringView name;
@@ -323,8 +324,7 @@ static void analyse_expr(Analyser* analyser, Expr* expr, int check_init) {
             analyse_expr(analyser, expr->binary->lhs, 1);
             analyse_expr(analyser, expr->binary->rhs, 1);
             
-            // Special case for assignment
-            if (expr->binary->op == BIN_EQ) {
+            if (expr->binary->op == BIN_ASSIGN) {
                 if (expr->binary->lhs->kind == EXPR_VARIABLE) {
                     Symbol* symbol = scope_lookup(analyser->current_scope, expr->binary->lhs->variable->name);
                     if (symbol) {

@@ -390,8 +390,6 @@ void co_disasm(MECodeObject* co) {
         return;
 
     printf("Disassembling code object: %.*s\n", (int)utf8_strsize(co->co_name), co->co_name);
-    printf("Bytecode size: %zu\n", co->co_size);
-    
     for (size_t i = 0; i < co->co_size; i++) {
         uint8_t op = co->co_bytecode[i];
         printf("%04zu: ", i);
