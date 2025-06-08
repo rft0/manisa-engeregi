@@ -149,6 +149,9 @@ static Token* get_token(Lexer* lexer) {
             return NULL;
         case '#':
             skipcomment(lexer);
+            if (*lexer->c == '\0')
+                return token_new(TOKEN_EOF, EMPTY_STRV, lexer->line, lexer->col);
+        
             if (*lexer->c == '\n') {
                 int last_col = lexer->col;
                 advance(lexer);

@@ -10,6 +10,7 @@
 #include "object.h"
 
 typedef struct MECodeObject {
+    char* co_name;
     uint8_t* co_bytecode;
     size_t co_size;
     size_t co_capacity;
@@ -19,6 +20,8 @@ typedef struct MECodeObject {
     MEObject** co_locals;
     uint8_t* co_lnotab;
     int in_function;
+    uint32_t loop_start;
+    uint32_t loop_end_jump;
 } MECodeObject;
 
 typedef enum {
@@ -42,7 +45,8 @@ typedef enum {
     CO_OP_CONTINUE_LOOP,
 } MECodeOp;
 
-MECodeObject* co_new(Stmt** stmts);
+MECodeObject* co_new(const char* filename, Stmt** stmts);
+void co_disasm(MECodeObject* co);
 
 int lnotab_get_line_from_ip(uint8_t* lnotab, uint32_t ip);
 

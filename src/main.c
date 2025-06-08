@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
     const char* filename = argv[1];
 #else
-    const char* filename = "deneme.me";
+    const char* filename = "deneme.me"; // For now let's assume "filename" is both utf-8 and null terminated string
 #endif
 
     char* src = read_file_binary(filename, NULL);
@@ -50,10 +50,10 @@ int main(int argc, char *argv[]) {
     lut_init();
 
     Token** tokens = lex(filename, src);
-    darray_for(tokens) token_dump(tokens[__i]);
+    // darray_for(tokens) token_dump(tokens[__i]);
 
     Stmt** stmts = parse(filename, tokens);
-    darray_for(stmts) stmt_dump(stmts[__i]);
+    // darray_for(stmts) stmt_dump(stmts[__i]);
     
     analyse(filename, stmts);
 
@@ -77,7 +77,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Byte code generation here after bytecode generation we can free the tokens and stmts 
-    MECodeObject* co = co_new(stmts);
+    MECodeObject* co = co_new(filename, stmts);
+    co_disasm(co);
     
     darray_for(tokens) free(tokens[__i]);
     darray_free(tokens);

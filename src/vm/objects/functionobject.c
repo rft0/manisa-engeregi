@@ -4,8 +4,21 @@
 #include "boolobject.h"
 #include "errorobject.h"
 
+MEObject* me_function_new(MECodeObject* co, size_t nargs) {
+    MEFunctionObject* obj = malloc(sizeof(MEFunctionObject));
+    if (!obj) {
+        me_set_error(me_error_outofmemory, "Failed to allocate memory for function object");
+        return NULL;
+    }
+
+    obj->co = co;
+    obj->nargs = nargs;
+
+    return (MEObject*)obj;
+}
+
 static MEObject* function_str(MEFunctionObject* obj) {
-    return (MEObject*)obj->ob_name;
+    return me_str_from_str(obj->co->co_name);
 }
 
 static MEObject* function_bool(MEFunctionObject* obj) {

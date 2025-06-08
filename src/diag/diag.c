@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "../utils/darray.h"
+#include "../utils/utf8.h"
 
 struct {
     Diagnostic** errs;
@@ -90,16 +91,16 @@ void diags_free() {
 void diags_dump() {
     darray_for(g_diags.errs) {
         Diagnostic* diag = g_diags.errs[__i];
-        printf("%s:%d:%d: error: %s\n", diag->filename, diag->line, diag->col, diag->msg);
+        printf("%.*s:%d:%d: error: %s\n", (int)utf8_strsize(diag->filename), diag->filename, diag->line, diag->col, diag->msg);
     }
 
     darray_for(g_diags.warns) {
         Diagnostic* diag = g_diags.warns[__i];
-        printf("%s:%d:%d: warn: %s\n", diag->filename, diag->line, diag->col, diag->msg);
+        printf("%.*s:%d:%d: warn: %s\n", (int)utf8_strsize(diag->filename), diag->filename, diag->line, diag->col, diag->msg);
     }
 
     darray_for(g_diags.infos) {
         Diagnostic* diag = g_diags.infos[__i];
-        printf("%s:%d:%d: info: %s\n", diag->filename, diag->line, diag->col, diag->msg);
+        printf("%.*s:%d:%d: info: %s\n", (int)utf8_strsize(diag->filename), diag->filename, diag->line, diag->col, diag->msg);
     }
 }

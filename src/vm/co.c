@@ -1,15 +1,18 @@
 #include "co.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "../utils/hashmap.h"
 #include "../utils/darray.h"
+#include "../utils/utf8.h"
 
-#include "objects/longobject.h"
+#include "objects/functionobject.h"
 #include "objects/floatobject.h"
-#include "objects/strobject.h"
+#include "objects/longobject.h"
 #include "objects/noneobject.h"
+#include "objects/strobject.h"
 
 #define ME_CO_INITIAL_CAPACITY 256
 
@@ -119,7 +122,7 @@ static uint16_t co_add_literal(MEObject** arr, LiteralExpr* literal) {
 static void co_compile_expr(MECodeObject* co, Expr* expr) {
     if (!expr)
         return;
-    
+
     uint16_t idx = 0;
     switch (expr->kind) {
         case EXPR_LITERAL: {
@@ -138,12 +141,14 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
                 idx = (uint16_t)(size_t)hashmap_get(co->co_h_locals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
                 co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, idx, 2);
             }
-
             lnotab_forward(co, 3, expr->line);
+            printf("1\n");
             break;
         }
         case EXPR_BINARY: {
+            printf("Compiling binary expression at line %d\n", expr->line);
             co_compile_expr(co, expr->binary->lhs);
+            printf("Compiled left operand at line %d\n", expr->line);
             co_compile_expr(co, expr->binary->rhs);
             
             co_bc_opoperand(co, CO_OP_BINARY_OP, expr->binary->op, 1);
@@ -158,11 +163,10 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
             break;
         }
         case EXPR_CALL: {
-            if (hashmap_get(co->co_h_locals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx)) {
+            if (hashmap_get(co->co_h_locals, expr->call->name.data, expr->call->name.byte_len, NULL)) {
                 idx = (uint16_t)(size_t)hashmap_get(co->co_h_locals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx);
                 co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, idx, 2);
-            } else if (hashmap_get(co->co_h_globals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx)) {
-                // THIS IS NOT USED BY NOW BECAUSE WE ASSUME ALL FUNCTIONS ARE LOCALS OF A MODULE BUT IF THERE IS MORE THAN ONE COMPILE UNIT THIS WILL BE NECCESSARY 
+            } else if (hashmap_get(co->co_h_globals, expr->call->name.data, expr->call->name.byte_len, NULL)) {
                 idx = (uint16_t)(size_t)hashmap_get(co->co_h_globals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx);
                 co_bc_opoperand(co, CO_OP_LOAD_GLOBAL, idx, 2);
             }
@@ -198,7 +202,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                 co_bc_opoperand(co, CO_OP_LOAD_CONST, 0, 2);
 
             if (!co->in_function) {
-                if (hashmap_get(co->co_h_globals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx)) {
+                if (hashmap_get(co->co_h_globals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, NULL)) {
                     idx = (uint16_t)(size_t)hashmap_get(co->co_h_globals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx);
                     co_bc_opoperand(co, CO_OP_STORE_GLOBAL, idx, 2);
                 } else {
@@ -207,7 +211,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                     co_bc_opoperand(co, CO_OP_STORE_GLOBAL, idx, 2);
                 }
             } else {
-                if (hashmap_get(co->co_h_locals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx)) {
+                if (hashmap_get(co->co_h_locals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, NULL)) {
                     idx = (uint16_t)(size_t)hashmap_get(co->co_h_locals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx);
                     co_bc_opoperand(co, CO_OP_STORE_VARIABLE, idx, 2);
                 } else {
@@ -236,24 +240,249 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
             break;
         }
         case STMT_IF: {
+            co_compile_expr(co, stmt->if_stmt->condition);
+    
+            uint32_t then_branch_start = co->co_size;
+            co_bc_opoperand(co, CO_OP_JUMP_IF_FALSE, 0, 4);
+            lnotab_forward(co, 5, stmt->line);
 
-            
+            for (size_t i = 0; i < darray_size(stmt->if_stmt->then_branch); i++) {
+                co_compile_stmt(co, stmt->if_stmt->then_branch[i]);
+            }
+
+            uint32_t else_branch_start = 0;
+            if (stmt->if_stmt->else_branch) {
+                else_branch_start = co->co_size;
+                co_bc_opoperand(co, CO_OP_JUMP, 0, 4);
+                lnotab_forward(co, 5, stmt->line);
+            }
+
+            uint32_t else_pos = co->co_size;
+            uint32_t if_offset = co->co_size - then_branch_start - 5;
+            memcpy(&co->co_bytecode[then_branch_start + 1], &if_offset, 4);
+
+            if (stmt->if_stmt->else_branch) {
+                co_compile_stmt(co, stmt->if_stmt->else_branch);
+                uint16_t else_offset = co->co_size - else_branch_start - 4;
+                memcpy(&co->co_bytecode[else_branch_start + 1], &else_offset, 4);
+            }
+        
             break;
         }
         case STMT_FUNCTION_DECL: {
-
-        }
-        case STMT_WHILE:
-        case STMT_BREAK:
-        case STMT_CONTINUE:
+            MECodeObject* func_co = malloc(sizeof(MECodeObject));
+            func_co->co_name = malloc(stmt->function_decl->name.byte_len + 1);
+            memcpy(func_co->co_name, stmt->function_decl->name.data, stmt->function_decl->name.byte_len);
+            func_co->co_name[stmt->function_decl->name.byte_len] = '\0';
+            func_co->co_h_globals = co->co_h_globals;
+            func_co->co_h_locals = hashmap_new();
+            func_co->co_consts = darray_new(MEObject*);
+            func_co->co_locals = darray_new(MEObject*);
+            darray_pushd(func_co->co_consts, me_none);
+            darray_pushd(func_co->co_locals, me_none);
+            func_co->co_lnotab = darray_new(uint8_t);
+            func_co->co_capacity = 128;
+            func_co->co_bytecode = (uint8_t*)malloc(func_co->co_capacity);
+            memset(func_co->co_bytecode, 0, func_co->co_capacity);
+            func_co->co_size = 0;
+            func_co->in_function = 1;
+            
+            for (size_t i = 0; i < darray_size(stmt->function_decl->params); i++) {
+                Expr* param = stmt->function_decl->params[i];
+                if (param->kind == EXPR_VARIABLE) {
+                    uint16_t param_idx = hashmap_size(func_co->co_h_locals);
+                    hashmap_set(func_co->co_h_locals, param->variable->name.data, param->variable->name.byte_len, (uintptr_t)param_idx);
+                }
+            }
+            
+            for (size_t i = 0; i < darray_size(stmt->function_decl->body); i++)
+                co_compile_stmt(func_co, stmt->function_decl->body[i]);
+            
+            // RETURN NONE ALWAYS IF THERE IS NO RETURN STMT
+            if (func_co->co_size == 0 || func_co->co_bytecode[func_co->co_size - 1] != CO_OP_RETURN) {
+                co_bc_opoperand(func_co, CO_OP_LOAD_CONST, 0, 2);
+                co_bc_op(func_co, CO_OP_RETURN);
+                lnotab_forward(func_co, 4, stmt->line);
+            }
+            
+            MEObject* func_obj = me_function_new(func_co, darray_size(stmt->function_decl->params));
+            uint16_t func_idx = darray_size(co->co_consts);
+            darray_pushd(co->co_locals, func_obj);
+            
+            co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, func_idx, 2);
+            lnotab_forward(co, 3, stmt->line);
+            co_bc_opoperand(co, CO_OP_MAKE_FUNCTION, darray_size(stmt->function_decl->params), 2);
+            lnotab_forward(co, 3, stmt->line);
+            
+            // ADD FUNCTION TO ITS LOCALS FOR RECURSIVE CALLS
+            uint32_t name_idx;
+            if (!co->in_function) {
+                if (hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
+                    hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
+                } else {
+                    name_idx = hashmap_size(co->co_h_globals);
+                    hashmap_set(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t)name_idx);
+                }
+                co_bc_opoperand(co, CO_OP_STORE_GLOBAL, name_idx, 2);
+            } else {
+                if (hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
+                    hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
+                } else {
+                    name_idx = hashmap_size(co->co_h_locals);
+                    hashmap_set(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t)name_idx);
+                }
+                co_bc_opoperand(co, CO_OP_STORE_VARIABLE, name_idx, 2);
+            }
+            lnotab_forward(co, 3, stmt->line);
+            
             break;
+        }
+        case STMT_WHILE: {
+            uint32_t loop_start = co->co_size;
+
+            co_compile_expr(co, stmt->while_stmt->condition);
+            
+            uint32_t jump_out_pos = co->co_size;
+            co_bc_opoperand(co, CO_OP_JUMP_IF_FALSE, 0, 4); // Placeholder
+            lnotab_forward(co, 5, stmt->line);
+            
+            int old_loop_start = co->loop_start;
+            int old_loop_end_jump = co->loop_end_jump;
+            co->loop_start = loop_start;
+            co->loop_end_jump = jump_out_pos;
+            
+            for (size_t i = 0; i < darray_size(stmt->while_stmt->body); i++)
+                co_compile_stmt(co, stmt->while_stmt->body[i]);
+
+            co_bc_opoperand(co, CO_OP_JUMP, loop_start - co->co_size - 5, 4);
+            lnotab_forward(co, 5, stmt->line);
+            
+            uint32_t end_pos = co->co_size;
+            uint16_t jump_out_offset = end_pos - jump_out_pos - 5;
+            memcpy(&co->co_bytecode[jump_out_pos + 1], &jump_out_offset, 4);
+            
+            co->loop_start = old_loop_start;
+            co->loop_end_jump = old_loop_end_jump;
+            
+            break;
+        }
+        case STMT_BREAK: {
+            uint32_t end_pos = co->co_size;
+            uint16_t break_offset = co->loop_end_jump - end_pos - 5;
+            co_bc_opoperand(co, CO_OP_JUMP, break_offset, 4);
+            lnotab_forward(co, 5, stmt->line);
+            break;
+        }
+        case STMT_CONTINUE: {
+            uint32_t current_pos = co->co_size;
+            uint16_t continue_offset = co->loop_start - current_pos - 3;
+            co_bc_opoperand(co, CO_OP_JUMP, continue_offset, 2);
+            lnotab_forward(co, 3, stmt->line);
+            break;
+        }
         default:
             break;
     }
 }
 
-MECodeObject* co_new(Stmt** stmts) {
+void co_disasm(MECodeObject* co) {
+    if (!co)
+        return;
+
+    printf("Disassembling code object: %.*s\n", (int)utf8_strsize(co->co_name), co->co_name);
+    printf("Bytecode size: %zu\n", co->co_size);
+    
+    for (size_t i = 0; i < co->co_size; i++) {
+        uint8_t op = co->co_bytecode[i];
+        printf("%04zu: ", i);
+        
+        switch (op) {
+            case CO_OP_LOAD_CONST: {
+                printf("LOAD_CONST ");
+                uint16_t idx = *(uint16_t*)(co->co_bytecode + i + 1);
+                printf("%u\n", idx);
+                i += 2;
+                break;
+            }
+            case CO_OP_LOAD_VARIABLE: {
+                printf("LOAD_VARIABLE ");
+                uint16_t idx = *(uint16_t*)(co->co_bytecode + i + 1);
+                printf("%u\n", idx);
+                i += 2;
+                break;
+            }
+            case CO_OP_STORE_VARIABLE: {
+                printf("STORE_VARIABLE ");
+                uint16_t idx = *(uint16_t*)(co->co_bytecode + i + 1);
+                printf("%u\n", idx);
+                i += 2;
+                break;
+            }
+            case CO_OP_STORE_GLOBAL: {
+                printf("STORE_GLOBAL ");
+                uint16_t idx = *(uint16_t*)(co->co_bytecode + i + 1);
+                printf("%u\n", idx);
+                i += 2;
+                break;
+            }
+            case CO_OP_LOAD_GLOBAL: {
+                printf("LOAD_GLOBAL ");
+                uint16_t idx = *(uint16_t*)(co->co_bytecode + i + 1);
+                printf("%u\n", idx);
+                i += 2;
+                break;
+            }
+            case CO_OP_CALL_FUNCTION:
+                printf("CALL_FUNCTION ");
+                uint8_t arg_count = co->co_bytecode[i + 1];
+                printf("%u\n", arg_count);
+                i++;
+                break;
+            case CO_OP_RETURN:
+                printf("RETURN\n");
+                break;
+            case CO_OP_JUMP_IF_FALSE:
+            case CO_OP_JUMP:
+                printf("JUMP ");
+                uint32_t jump_offset = *(uint32_t*)(co->co_bytecode + i + 1);
+                printf("%u\n", jump_offset);
+                i += 4;
+                break;
+
+            case CO_OP_MAKE_FUNCTION:
+                printf("MAKE_FUNCTION ");
+                uint8_t param_count = co->co_bytecode[i + 1];
+                printf("%u\n", param_count);
+                i++;
+                break;
+            case CO_OP_UNARY_OP:
+                printf("UNARY_OP ");
+                uint8_t unary_op = co->co_bytecode[i + 1];
+                printf("%u\n", unary_op);
+                i++;
+                break;
+            case CO_OP_BINARY_OP:
+                printf("BINARY_OP ");
+                uint8_t binary_op = co->co_bytecode[i + 1];
+                printf("%u\n", binary_op);
+                i++;
+                break;
+            case CO_OP_POP:
+                printf("POP\n");
+                break;
+            default:
+                printf("UNKNOWN OP %u\n", op);
+                break;
+        }
+    }    
+}
+
+MECodeObject* co_new(const char* filename, Stmt** stmts) {
     MECodeObject* co = malloc(sizeof(MECodeObject));
+    size_t filename_size = utf8_strsize(filename) + 1; 
+    co->co_name = malloc(filename_size);
+    memcpy(co->co_name, filename, filename_size);
+    
     co->co_h_globals = hashmap_new();
     co->co_h_locals = hashmap_new();
     co->co_consts = darray_new(MEObject*);
@@ -266,9 +495,13 @@ MECodeObject* co_new(Stmt** stmts) {
     memset(co->co_bytecode, 0, co->co_capacity);
     co->co_size = 0;
     co->in_function = 0;
+    co->loop_start = 0;
+    co->loop_end_jump = 0;
 
-    for (size_t i = 0; i < darray_size(stmts); i++)
+    for (size_t i = 0; i < darray_size(stmts); i++) {
+        printf("Compiling statement %zu\n", i);
         co_compile_stmt(co, stmts[i]);
+    }
 
     return co;
 }
@@ -277,8 +510,11 @@ void co_free(MECodeObject* co) {
     if (!co)
         return;
 
+    free(co->co_name);
+
     hashmap_free(co->co_h_globals);
     hashmap_free(co->co_h_locals);
+    darray_free(co->co_consts);
     darray_free(co->co_locals);
     darray_free(co->co_lnotab);
 
