@@ -123,7 +123,7 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
     if (!expr)
         return;
 
-    uint16_t idx = 0;
+    uintptr_t idx = 0;
     switch (expr->kind) {
         case EXPR_LITERAL: {
             idx = co_add_literal(co->co_consts, expr->literal);
@@ -135,10 +135,10 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
             StringView var_name = expr->variable->name;
             
             if (hashmap_get(co->co_h_globals, expr->variable->name.data, expr->variable->name.byte_len, NULL)) {
-                idx = (uint16_t)(size_t)hashmap_get(co->co_h_globals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
+                hashmap_get(co->co_h_globals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
                 co_bc_opoperand(co, CO_OP_LOAD_GLOBAL, idx, 2);
             } else if (hashmap_get(co->co_h_locals, expr->variable->name.data, expr->variable->name.byte_len, NULL)) {
-                idx = (uint16_t)(size_t)hashmap_get(co->co_h_locals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
+                hashmap_get(co->co_h_locals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
                 co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, idx, 2);
             }
             lnotab_forward(co, 3, expr->line);
@@ -146,13 +146,22 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
             break;
         }
         case EXPR_BINARY: {
-            printf("Compiling binary expression at line %d\n", expr->line);
-            co_compile_expr(co, expr->binary->lhs);
-            printf("Compiled left operand at line %d\n", expr->line);
-            co_compile_expr(co, expr->binary->rhs);
-            
-            co_bc_opoperand(co, CO_OP_BINARY_OP, expr->binary->op, 1);
-            lnotab_forward(co, 2, expr->line);
+                co_compile_expr(co, expr->binary->lhs);
+                co_compile_expr(co, expr->binary->rhs);
+                
+                co_bc_opoperand(co, CO_OP_BINARY_OP, expr->binary->op, 1);
+                lnotab_forward(co, 2, expr->line);
+                
+                if (expr->binary->op == BIN_ASSIGN) {
+                    if (hashmap_get(co->co_h_locals, expr->binary->lhs->variable->name.data, expr->binary->lhs->variable->name.byte_len, NULL)) {
+                        hashmap_get(co->co_h_locals, expr->binary->lhs->variable->name.data, expr->binary->lhs->variable->name.byte_len, (uintptr_t*)&idx);
+                        co_bc_opoperand(co, CO_OP_STORE_VARIABLE, idx, 2);
+                    } else if (hashmap_get(co->co_h_globals, expr->binary->lhs->variable->name.data, expr->binary->lhs->variable->name.byte_len, NULL)) {
+                        hashmap_get(co->co_h_globals, expr->binary->lhs->variable->name.data, expr->binary->lhs->variable->name.byte_len, (uintptr_t*)&idx);
+                        co_bc_opoperand(co, CO_OP_STORE_GLOBAL, idx, 2);
+                    }
+                }
+
             break;
         }
         case EXPR_UNARY: {
@@ -164,10 +173,10 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
         }
         case EXPR_CALL: {
             if (hashmap_get(co->co_h_locals, expr->call->name.data, expr->call->name.byte_len, NULL)) {
-                idx = (uint16_t)(size_t)hashmap_get(co->co_h_locals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx);
+                hashmap_get(co->co_h_locals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx);
                 co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, idx, 2);
             } else if (hashmap_get(co->co_h_globals, expr->call->name.data, expr->call->name.byte_len, NULL)) {
-                idx = (uint16_t)(size_t)hashmap_get(co->co_h_globals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx);
+                hashmap_get(co->co_h_globals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx);
                 co_bc_opoperand(co, CO_OP_LOAD_GLOBAL, idx, 2);
             }
 
@@ -187,12 +196,14 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
     if (!stmt)
         return;
     
-    uint16_t idx = 0;
+    uintptr_t idx = 0;
 
     switch (stmt->kind) {
         case STMT_EXPR:
             co_compile_expr(co, stmt->expr_stmt);
-            co_bc_op(co, CO_OP_POP);
+            if (stmt->expr_stmt->binary->op != BIN_ASSIGN)
+                co_bc_op(co, CO_OP_POP);
+
             lnotab_forward(co, 1, stmt->line);
             break;
         case STMT_DECL: {
@@ -203,7 +214,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
 
             if (!co->in_function) {
                 if (hashmap_get(co->co_h_globals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, NULL)) {
-                    idx = (uint16_t)(size_t)hashmap_get(co->co_h_globals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx);
+                    hashmap_get(co->co_h_globals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx);
                     co_bc_opoperand(co, CO_OP_STORE_GLOBAL, idx, 2);
                 } else {
                     idx = hashmap_size(co->co_h_globals);
@@ -212,7 +223,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                 }
             } else {
                 if (hashmap_get(co->co_h_locals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, NULL)) {
-                    idx = (uint16_t)(size_t)hashmap_get(co->co_h_locals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx);
+                    hashmap_get(co->co_h_locals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx);
                     co_bc_opoperand(co, CO_OP_STORE_VARIABLE, idx, 2);
                 } else {
                     idx = hashmap_size(co->co_h_locals);
