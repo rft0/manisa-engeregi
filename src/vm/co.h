@@ -17,6 +17,7 @@ typedef struct MECodeObject {
     HashMap* co_h_globals;
     HashMap* co_h_locals;
     MEObject** co_consts;
+    MEObject** co_globals;
     MEObject** co_locals;
     uint8_t* co_lnotab;
     int in_function;
@@ -40,15 +41,11 @@ typedef enum {
     CO_OP_POP,
     CO_OP_JUMP_REL,
     CO_OP_JUMP_IF_FALSE,
-    CO_OP_JUMP_IF_TRUE,
-    CO_OP_MAKE_FUNCTION,
-    CO_OP_SETUP_LOOP,
-    CO_OP_BREAK_LOOP,
-    CO_OP_CONTINUE_LOOP,
 } MECodeOp;
 
 MECodeObject* co_new(const char* filename, Stmt** stmts);
 void co_disasm(MECodeObject* co);
+void co_free(MECodeObject* co);
 
 int lnotab_get_line_from_ip(uint8_t* lnotab, uint32_t ip);
 

@@ -302,6 +302,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
             func_co->co_h_globals = co->co_h_globals;
             func_co->co_h_locals = hashmap_new();
             func_co->co_consts = darray_new(MEObject*);
+            func_co->co_globals = darray_new(MEObject*);
             func_co->co_locals = darray_new(MEObject*);
             darray_pushd(func_co->co_consts, me_none);
             darray_pushd(func_co->co_locals, me_none);
@@ -486,12 +487,6 @@ void co_disasm(MECodeObject* co) {
                 printf("%d\n", jump_offset);
                 ip += 2;
                 break;
-            case CO_OP_MAKE_FUNCTION:
-                printf("MAKE_FUNCTION ");
-                uint8_t param_count = co->co_bytecode[ip + 1];
-                printf("%u\n", param_count);
-                ip++;
-                break;
             case CO_OP_UNARY_OP:
                 printf("UNARY_OP ");
                 uint8_t unary_op = co->co_bytecode[ip + 1];
@@ -537,6 +532,7 @@ MECodeObject* co_new(const char* filename, Stmt** stmts) {
     co->co_h_globals = hashmap_new();
     co->co_h_locals = hashmap_new();
     co->co_consts = darray_new(MEObject*);
+    co->co_globals = darray_new(MEObject*);
     co->co_locals = darray_new(MEObject*);
     darray_pushd(co->co_consts, me_none);
     co->co_lnotab = darray_new(uint8_t);
@@ -565,6 +561,7 @@ void co_free(MECodeObject* co) {
     hashmap_free(co->co_h_globals);
     hashmap_free(co->co_h_locals);
     darray_free(co->co_consts);
+    darray_free(co->co_globals);
     darray_free(co->co_locals);
     darray_free(co->co_lnotab);
 

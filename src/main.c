@@ -75,7 +75,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Byte code generation here after bytecode generation we can free the tokens and stmts
     MECodeObject* co = co_new(filename, stmts);
     co_disasm(co);
     
@@ -85,13 +84,21 @@ int main(int argc, char *argv[]) {
     darray_for(stmts) free(stmts[__i]);
     darray_free(stmts);
 
-    diags_dump();
-    diags_free();
+    // diags_dump();
+    // diags_free();
     free(src);
 
-    // Different structure than diag will be used for runtime errors
-    // VM execution here
+    MEVM* vm = me_vm_new(co);
+    MEVMExitCode res = me_vm_run(vm);
+    if (res != MEVM_EXIT_OK) {
+        fprintf(stderr, "Runtime error occurred during execution.\n");
+        me_vm_free(vm);
+        lut_free();
+        return res;
+    }
 
+
+    me_vm_free(vm);
     lut_free();
 
     return 0;
