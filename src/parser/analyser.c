@@ -342,6 +342,20 @@ static void analyse_expr(Analyser* analyser, Expr* expr, int check_init) {
             darray_for(expr->call->args) {
                 analyse_expr(analyser, expr->call->args[__i], 1);
             }
+
+            Symbol* symbol = scope_lookup(analyser->current_scope, expr->call->name);
+            if (!symbol) {
+                diags_new_diag(DIAG_SEMANTIC, DIAG_ERROR, analyser->filename, 
+                    expr->line, expr->col,
+                    "Undefined function '%.*s'", 
+                    (int)expr->call->name.byte_len, expr->call->name.data);
+            } else if (symbol->nargs != darray_size(expr->call->args)) {
+                diags_new_diag(DIAG_SEMANTIC, DIAG_ERROR, analyser->filename, 
+                    expr->line, expr->col,
+                    "Function '%.*s' expects %d arguments but got %zu", 
+                    (int)symbol->name.byte_len, symbol->name.data,
+                    symbol->nargs, darray_size(expr->call->args));
+            }
             break;
         }
         
