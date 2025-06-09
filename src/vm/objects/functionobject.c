@@ -11,6 +11,9 @@ MEObject* me_function_new(MECodeObject* co, size_t nargs) {
         return NULL;
     }
 
+    obj->ob_type = &me_type_function;
+    obj->ob_refcount = 1;
+
     obj->co = co;
     obj->nargs = nargs;
 

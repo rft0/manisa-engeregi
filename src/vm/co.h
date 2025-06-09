@@ -17,7 +17,6 @@ typedef struct MECodeObject {
     HashMap* co_h_globals;
     HashMap* co_h_locals;
     MEObject** co_consts;
-    MEObject** co_globals;
     MEObject** co_locals;
     uint8_t* co_lnotab;
     int in_function;

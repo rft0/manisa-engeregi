@@ -54,7 +54,6 @@ int main(int argc, char *argv[]) {
 
     Stmt** stmts = parse(filename, tokens);
     darray_for(stmts) stmt_dump(stmts[__i]);
-    
     analyse(filename, stmts);
 
     if (diags_errs_size() > 0) {
@@ -76,7 +75,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Byte code generation here after bytecode generation we can free the tokens and stmts 
+    // Byte code generation here after bytecode generation we can free the tokens and stmts
     MECodeObject* co = co_new(filename, stmts);
     co_disasm(co);
     

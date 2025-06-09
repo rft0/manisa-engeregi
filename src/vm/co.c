@@ -134,12 +134,22 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
         case EXPR_VARIABLE: {
             StringView var_name = expr->variable->name;
             
-            if (hashmap_get(co->co_h_globals, expr->variable->name.data, expr->variable->name.byte_len, NULL)) {
-                hashmap_get(co->co_h_globals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
-                co_bc_opoperand(co, CO_OP_LOAD_GLOBAL, idx, 2);
-            } else if (hashmap_get(co->co_h_locals, expr->variable->name.data, expr->variable->name.byte_len, NULL)) {
-                hashmap_get(co->co_h_locals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
-                co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, idx, 2);
+            if (!co->in_function) {
+                if (hashmap_get(co->co_h_globals, expr->variable->name.data, expr->variable->name.byte_len, NULL)) {
+                    hashmap_get(co->co_h_globals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
+                    co_bc_opoperand(co, CO_OP_LOAD_GLOBAL, idx, 2);
+                } else if (hashmap_get(co->co_h_locals, expr->variable->name.data, expr->variable->name.byte_len, NULL)) {
+                    hashmap_get(co->co_h_locals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
+                    co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, idx, 2);
+                }
+            } else {
+                if (hashmap_get(co->co_h_locals, expr->variable->name.data, expr->variable->name.byte_len, NULL)) {
+                    hashmap_get(co->co_h_locals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
+                    co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, idx, 2);
+                } else if (hashmap_get(co->co_h_globals, expr->variable->name.data, expr->variable->name.byte_len, NULL)) {
+                    hashmap_get(co->co_h_globals, expr->variable->name.data, expr->variable->name.byte_len, (uintptr_t*)&idx);
+                    co_bc_opoperand(co, CO_OP_LOAD_GLOBAL, idx, 2);
+                }
             }
             lnotab_forward(co, 3, expr->line);
             break;
@@ -413,7 +423,6 @@ void co_disasm(MECodeObject* co) {
     if (!co)
         return;
 
-    printf("Disassembling code object: %.*s\n", (int)utf8_strsize(co->co_name), co->co_name);
     uint32_t ip = 0;
     while (ip < co->co_size)
     {
@@ -504,7 +513,19 @@ void co_disasm(MECodeObject* co) {
         }
 
         ip += 1;
-    }    
+    }
+
+    for (size_t i = 0; i < darray_size(co->co_consts); i++) {
+        if (!me_function_check(co->co_consts[i]))
+            continue;
+
+        MEFunctionObject* func = (MEFunctionObject*)co->co_consts[i];
+        printf("--------------------\n");
+        printf("Function: %.*s, nargs: %zu\n", (int)utf8_strsize(func->co->co_name), func->co->co_name, func->nargs);
+        printf("Bytecode:\n");
+        co_disasm(func->co);
+        printf("--------------------\n");
+    }
 }
 
 MECodeObject* co_new(const char* filename, Stmt** stmts) {
@@ -529,10 +550,8 @@ MECodeObject* co_new(const char* filename, Stmt** stmts) {
     co->loop_end_pos = 0;
     co->break_patches = darray_new(uint32_t);
 
-    for (size_t i = 0; i < darray_size(stmts); i++) {
-        printf("Compiling statement %zu\n", i);
+    for (size_t i = 0; i < darray_size(stmts); i++)
         co_compile_stmt(co, stmts[i]);
-    }
 
     return co;
 }
