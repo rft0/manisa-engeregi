@@ -38,6 +38,7 @@ typedef enum {
     CO_OP_UNARY_OP,
     CO_OP_CALL_FUNCTION,
     CO_OP_RETURN,
+    CO_OP_DUP,
     CO_OP_POP,
     CO_OP_JUMP_REL,
     CO_OP_JUMP_IF_FALSE,

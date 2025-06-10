@@ -12,6 +12,7 @@ static struct {
     MEObject* error_obj;
 } me_global_error = {NULL, NULL}; 
 
+METypeObject me_type_error_generic;
 METypeObject me_type_error_divisionbyzero;
 METypeObject me_type_error_typemismatch;
 METypeObject me_type_error_notimplemented;
@@ -38,6 +39,13 @@ MEObject* me_get_error_obj() {
 const char* me_get_error_msg() {
     return me_global_error.error_msg;
 }
+
+struct {
+    ME_OBJHEAD
+} me_error_generic_instance = {
+    .ob_type = &me_type_error_generic,
+    .ob_refcount = 1,
+};
 
 struct {
     ME_OBJHEAD
@@ -72,6 +80,10 @@ MEObject* me_error_divisionbyzero = (MEObject*)&me_error_divisionbyzero_instance
 MEObject* me_error_typemismatch = (MEObject*)&me_error_typemismatch_instance;
 MEObject* me_error_notimplemented = (MEObject*)&me_error_notimplemented_instance;
 
+static MEObject* error_generic_str(MEObject* obj) {
+    return me_str_from_str("Division by zero error");
+}
+
 static MEObject* error_divisionbyzero_str(MEObject* obj) {
     return me_str_from_str("Division by zero error");
 }
@@ -87,6 +99,30 @@ static MEObject* error_notimplemented_str(MEObject* obj) {
 static MEObject* error_outofmemory_str(MEObject* obj) {
     return me_str_from_str("Out of memory error");
 }
+
+
+METypeObject me_type_error_generic = {
+    .tp_name = "GenericError",
+    .tp_sizeof = sizeof(me_error_generic_instance),
+    .tp_dealloc = NULL,
+    .tp_str = error_generic_str,
+    .tp_bool = NULL,
+    .tp_call = NULL,
+    .tp_nb_add = NULL,
+    .tp_nb_sub = NULL,
+    .tp_nb_mul = NULL,
+    .tp_nb_div = NULL,
+    .tp_nb_mod = NULL,
+    .tp_nb_bit_and = NULL,
+    .tp_nb_bit_or = NULL,
+    .tp_nb_bit_xor = NULL,
+    .tp_nb_lshift = NULL,
+    .tp_nb_rshift = NULL,
+    .tp_unary_negative = NULL,
+    .tp_unary_positive = NULL,
+    .tp_unary_bit_not = NULL,
+    .tp_cmp = NULL
+};
 
 
 METypeObject me_type_error_divisionbyzero = {

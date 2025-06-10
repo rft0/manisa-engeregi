@@ -4,7 +4,8 @@
 #include "object.h"
 #include "co.h"
 
-typedef struct {
+typedef struct _MEVM {
+    struct _MEVM* parent;
     MECodeObject* co;
     MEObject** stack;
 

@@ -16,6 +16,7 @@
 
 #define ME_CO_INITIAL_CAPACITY 256
 
+// NOTE: MOVING THIS IN OP/OPERAND CREATOR FUNCTIONS MAY BE BETTER
 static void lnotab_forward(MECodeObject* co, uint8_t offset, int line) {
     static int last_line = 0;
     darray_pushd(co->co_lnotab, offset);
@@ -174,10 +175,39 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
             break;
         }
         case EXPR_UNARY: {
-            co_compile_expr(co, expr->unary->operand);
-            
-            co_bc_opoperand(co, CO_OP_UNARY_OP, expr->unary->op, 1);
-            lnotab_forward(co, 2, expr->line);
+            UnaryOp op = expr->unary->op;
+
+            if (op == UNARY_PRE_INC || op == UNARY_PRE_DEC || op == UNARY_POST_INC || op == UNARY_POST_DEC) {
+                co_compile_expr(co, expr->unary->operand);
+        
+                co_bc_op(co, CO_OP_DUP);
+                co_bc_opoperand(co, CO_OP_LOAD_CONST, 1, 2);
+                if (op == UNARY_PRE_INC || op == UNARY_POST_INC)
+                    co_bc_opoperand(co, CO_OP_BINARY_OP, BIN_ADD, 1);
+                else
+                    co_bc_opoperand(co, CO_OP_BINARY_OP, BIN_SUB, 1);
+
+                uintptr_t idx = 0;
+                if (hashmap_get(co->co_h_locals, expr->unary->operand->variable->name.data, expr->unary->operand->variable->name.byte_len, NULL)) {
+                    hashmap_get(co->co_h_locals, expr->unary->operand->variable->name.data, expr->unary->operand->variable->name.byte_len, (uintptr_t*)&idx);
+                    co_bc_opoperand(co, CO_OP_STORE_VARIABLE, idx, 2);
+                } else if (hashmap_get(co->co_h_globals, expr->unary->operand->variable->name.data, expr->unary->operand->variable->name.byte_len, NULL)) {
+                    hashmap_get(co->co_h_globals, expr->unary->operand->variable->name.data, expr->unary->operand->variable->name.byte_len, (uintptr_t*)&idx);
+                    co_bc_opoperand(co, CO_OP_STORE_GLOBAL, idx, 2);
+                }
+                
+                lnotab_forward(co, 7, expr->line);
+
+                if (op == UNARY_POST_INC || op == UNARY_POST_DEC) {
+                    co_bc_op(co, CO_OP_POP);
+                    lnotab_forward(co, 1, expr->line);
+                }
+
+            } else {
+                co_compile_expr(co, expr->unary->operand);
+                co_bc_opoperand(co, CO_OP_UNARY_OP, op, 1);
+                lnotab_forward(co, 2, expr->line);
+            }
             break;
         }
         case EXPR_CALL: {
@@ -307,7 +337,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
             func_co->co_globals = darray_new(MEObject*);
             func_co->co_locals = darray_new(MEObject*);
             darray_pushd(func_co->co_consts, me_none);
-            darray_pushd(func_co->co_locals, me_none);
+            darray_pushd(func_co->co_consts, me_long_from_long(1));
             func_co->co_lnotab = darray_new(uint8_t);
             func_co->co_capacity = 128;
             func_co->co_bytecode = (uint8_t*)malloc(func_co->co_capacity);
@@ -539,7 +569,10 @@ MECodeObject* co_new(const char* filename, Stmt** stmts) {
     co->co_consts = darray_new(MEObject*);
     co->co_globals = darray_new(MEObject*);
     co->co_locals = darray_new(MEObject*);
+
+    // IDX 0 RESERVED FOR NONE OBJECT, IDX 1 RESERVED FOR INT 1 OBJECT
     darray_pushd(co->co_consts, me_none);
+    darray_pushd(co->co_consts, me_long_from_long(1)); 
     co->co_lnotab = darray_new(uint8_t);
     co->co_capacity = ME_CO_INITIAL_CAPACITY;
     co->co_bytecode = (uint8_t*)malloc(co->co_capacity);

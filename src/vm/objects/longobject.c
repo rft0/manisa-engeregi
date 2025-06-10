@@ -52,16 +52,16 @@ MEObject* me_long_from_str(const char* str) {
     return (MEObject*)obj;
 }
 
-static void long_dealloc(MELongObject* obj) {
+static void long_dealloc(MEObject* obj) {
     free(obj);
 }
 
-static MEObject* long_str(MELongObject* obj) {
-    return me_str_from_long(obj->ob_value);
+static MEObject* long_str(MEObject* obj) {
+    return me_str_from_long(((MELongObject*)obj)->ob_value);
 }
 
-static MEObject* long_bool(MELongObject* obj) {
-    return obj->ob_value ? me_true : me_false;
+static MEObject* long_bool(MEObject* obj) {
+    return ((MELongObject*)obj)->ob_value ? me_true : me_false;
 }
 
 static MEObject* long_cmp(MEObject* v, MEObject* w, MECmpOp op) {

@@ -113,21 +113,26 @@ MEObject* me_str_from_double(double value) {
     return (MEObject*)obj;
 }
 
-static void str_dealloc(MEStrObject* obj) {
-    free(obj->ob_value);
+static void str_dealloc(MEObject* obj) {
+    free(((MEStrObject*)obj)->ob_value);
     free(obj);
 }
 
-static MEObject* str_str(MEStrObject* obj) {
-    return (MEObject*)obj;
+static MEObject* str_str(MEObject* obj) {
+    return obj;
 }
 
-static MEObject* str_bool(MEStrObject* obj) {
-    return obj->ob_bytelength > 0 ? me_true : me_false;
+static MEObject* str_bool(MEObject* obj) {
+    return ((MEStrObject*)obj)->ob_bytelength > 0 ? me_true : me_false;
 }
 
-static MEObject* str_cmp(MEStrObject* v, MEStrObject* w, MECmpOp op) {
-    int cmp = strcmp(v->ob_value, w->ob_value);
+static MEObject* str_cmp(MEObject* v, MEObject* w, MECmpOp op) {
+    if (!me_str_check(v) || !me_str_check(w)) {
+        me_set_error(me_error_typemismatch, "Type mismatch in string comparison");
+        return NULL;
+    }
+
+    int cmp = strcmp(((MEStrObject*)v)->ob_value, ((MEStrObject*)w)->ob_value);
     switch (op) {
         case ME_CMP_EQ: return cmp == 0 ? me_true : me_false;
         case ME_CMP_NEQ: return cmp != 0 ? me_true : me_false;

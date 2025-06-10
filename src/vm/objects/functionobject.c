@@ -20,19 +20,19 @@ MEObject* me_function_new(MECodeObject* co, size_t nargs) {
     return (MEObject*)obj;
 }
 
-static MEObject* function_str(MEFunctionObject* obj) {
-    return me_str_from_str(obj->co->co_name);
+static MEObject* function_str(MEObject* obj) {
+    return me_str_from_str(((MEFunctionObject*)obj)->co->co_name);
 }
 
-static MEObject* function_bool(MEFunctionObject* obj) {
+static MEObject* function_bool(MEObject* obj) {
     return me_true;
 }
 
-static MEObject* function_call(MEFunctionObject* obj, MEObject** args, size_t nargs) {
+static MEObject* function_call(MEObject* obj, MEObject** args, size_t nargs) {
     return me_none;
 }
 
-static MEObject* function_cmp(MEFunctionObject* v, MEFunctionObject* w, MECmpOp op) {
+static MEObject* function_cmp(MEObject* v, MEObject* w, MECmpOp op) {
     switch (op) {
         case ME_CMP_EQ: return v == w ? me_true : me_false;
         case ME_CMP_NEQ: return v != w ? me_true : me_false;

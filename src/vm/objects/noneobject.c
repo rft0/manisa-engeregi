@@ -11,15 +11,15 @@ static MENoneObject me_none_instance = {
 
 MEObject* me_none = (MEObject*)&me_none_instance;
 
-static MEObject* none_str(MENoneObject* obj) {
+static MEObject* none_str(MEObject* obj) {
     return me_str_from_str("None");
 }
 
-static MEObject* none_bool(MENoneObject* obj) {
+static MEObject* none_bool(MEObject* obj) {
     return me_false;
 }
 
-static MEObject* none_cmp(MENoneObject* v, MENoneObject* w, MECmpOp op) {
+static MEObject* none_cmp(MEObject* v, MEObject* w, MECmpOp op) {
     switch (op) {
         case ME_CMP_EQ: return v == w ? me_true : me_false;
         case ME_CMP_NEQ: return v != w ? me_true : me_false;

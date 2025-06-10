@@ -16,7 +16,7 @@
 
 MEObject* me_binary_op(MEObject* lhs, MEObject* rhs, BinaryOp op);
 MEObject* me_unary_op(MEObject* obj, UnaryOp op);
-MEObject* me_function_call(MEObject* func_obj, MEObject** args, uint8_t arg_count);
+MEObject* me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uint8_t arg_count);
 
 MEObject* me_binary_add(MEObject* lhs, MEObject* rhs);
 MEObject* me_binary_sub(MEObject* lhs, MEObject* rhs);
@@ -32,6 +32,7 @@ MEObject* me_binary_cmp(MEObject* lhs, MEObject* rhs, BinaryOp op);
 
 MEVM* me_vm_new(MECodeObject* co) {
     MEVM* vm = (MEVM*)malloc(sizeof(MEVM));
+    vm->parent = NULL;
     vm->co = co;
     vm->stack = darray_new(MEObject*);
     vm->ip = 0;
@@ -51,6 +52,14 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                     return MEVM_EXIT_STACK_UNDERFLOW;
 
                 POP(vm);
+                break;
+            }
+            case CO_OP_DUP: {
+                if (vm->sp == 0)
+                    return MEVM_EXIT_STACK_UNDERFLOW;
+
+                MEObject* top = TOP(vm);
+                PUSH(vm, top);
                 break;
             }
             case CO_OP_LOAD_CONST: {
@@ -132,7 +141,7 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                     args[arg_count - 1 - i] = POP(vm);
 
                 MEObject* func_obj = POP(vm);
-                MEObject* result = me_function_call(func_obj, args, arg_count);
+                MEObject* result = me_function_call(vm, func_obj, args, arg_count);
                 free(args);
 
                 if (!result)
@@ -148,7 +157,7 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 MEObject* return_value = POP(vm);
                 if (vm->co->in_function) {
                     vm->co->in_function = 0;
-                    PUSH(vm, return_value);
+                    PUSH(vm->parent, return_value);
                 } else {
                     // For functions mainly
                     return MEVM_EXIT_OK; // Exit the VM with the return value on the stack
@@ -474,14 +483,27 @@ MEObject* me_unary_op(MEObject* obj, UnaryOp op) {
     }
 }
 
-MEObject* me_function_call(MEObject* func_obj, MEObject** args, uint8_t arg_count) {
+MEObject* me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uint8_t arg_count) {
     if (!me_function_check(func_obj)) {
         me_set_error(me_error_typemismatch, "Object is not callable: \"%s\".", ME_TYPE_NAME(func_obj));
         return NULL;
     }
 
     MEFunctionObject* func = (MEFunctionObject*)func_obj;
-    // YET TO BE IMPLEMENTED.
+    if (arg_count != func->nargs) {
+        me_set_error(me_error_generic, "Function \"%s\" expects %u arguments, got %u.", func->co->co_name, func->nargs, arg_count);
+        return NULL;
+    }
+
+    MEVM* func_vm = me_vm_new(func->co);
+    vm->parent = vm;
+
+    MEVMExitCode exit = me_vm_run(vm);
+    if (exit != MEVM_EXIT_OK) {
+        me_set_error(me_error_generic, "Function \"%s\" exited with error code: %d.", func->co->co_name, exit);
+        me_vm_free(func_vm);
+        return NULL;
+    }
 
     return NULL;
 }

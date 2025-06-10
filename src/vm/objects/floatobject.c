@@ -67,16 +67,16 @@ MEObject* me_float_from_str(const char* str) {
     return (MEObject*)obj;
 }
 
-static void float_dealloc(MEFloatObject* obj) {
+static void float_dealloc(MEObject* obj) {
     free(obj);
 }
 
-static MEObject* float_str(MEFloatObject* obj) {
-    return me_str_from_double(obj->ob_value);
+static MEObject* float_str(MEObject* obj) {
+    return me_str_from_double(((MEFloatObject*)obj)->ob_value);
 }
 
-static MEObject* float_bool(MEFloatObject* obj) {
-    return obj->ob_value != 0.0 ? me_true : me_false;
+static MEObject* float_bool(MEObject* obj) {
+    return ((MEFloatObject*)obj)->ob_value != 0.0 ? me_true : me_false;
 }
 
 static MEObject* float_cmp(MEObject* v, MEObject* w, MECmpOp op) {
