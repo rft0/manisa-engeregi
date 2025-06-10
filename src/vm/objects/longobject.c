@@ -79,8 +79,7 @@ MEObject* long_cmp(MEObject* v, MEObject* w, MECmpOp op) {
         case ME_CMP_GT: return lhs > rhs ? me_true : me_false;
         case ME_CMP_GTE: return lhs >= rhs ? me_true : me_false;
         default:
-            me_set_error(me_error_notimplemented, "Comparison operation not implemented for long objects");
-            return NULL;
+            return me_error_notimplemented;
     }
 }
 

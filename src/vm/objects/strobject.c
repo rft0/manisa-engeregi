@@ -136,8 +136,7 @@ static MEObject* str_cmp(MEStrObject* v, MEStrObject* w, MECmpOp op) {
         case ME_CMP_GT: return cmp > 0 ? me_true : me_false;
         case ME_CMP_GTE: return cmp >= 0 ? me_true : me_false;
         default:
-            me_set_error(me_error_notimplemented, "Comparison operation not implemented for strings");
-            return NULL;
+            return me_error_notimplemented;
     }
 }
 
