@@ -130,8 +130,7 @@ static Expr* parse_assignment(Parser* parser) {
         parser_match(parser, TOKEN_ASSIGN_MOD)      ||
         parser_match(parser, TOKEN_ASSIGN_BIT_AND)  ||
         parser_match(parser, TOKEN_ASSIGN_BIT_OR)   ||
-        parser_match(parser, TOKEN_ASSIGN_BIT_XOR)  ||
-        parser_match(parser, TOKEN_ASSIGN_BIT_NOT)) {
+        parser_match(parser, TOKEN_ASSIGN_BIT_XOR)) {
         
         Token* op = parser->tokens[parser->index - 1];
         

@@ -37,7 +37,6 @@ typedef enum {
     BIN_BIT_AND,
     BIN_BIT_OR,
     BIN_BIT_XOR,
-    BIN_BIT_NOT,
     BIN_BIT_LSHIFT,
     BIN_BIT_RSHIFT,
 } BinaryOp;

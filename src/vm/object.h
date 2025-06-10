@@ -12,8 +12,9 @@ typedef struct MEObject MEObject;
 
 #define ME_OBJHEAD size_t ob_refcount; METypeObject* ob_type;
 
-#define ME_TYPE(obj) ((obj)->ob_type)
-#define ME_TYPE_CHECK(obj, typeobject) ((obj)->ob_type == typeobject || (obj)->ob_type->tp_base == typeobject)
+#define ME_TYPE(obj)                        ((obj)->ob_type)
+#define ME_TYPE_NAME(obj)                   ((obj)->ob_type->tp_name)
+#define ME_TYPE_CHECK(obj, typeobject)      ((obj)->ob_type == typeobject || (obj)->ob_type->tp_base == typeobject)
 
 struct MEObject {
     ME_OBJHEAD
@@ -40,10 +41,11 @@ typedef MEObject* (*fn_nb_mod)(MEObject*, MEObject*);
 typedef MEObject* (*fn_nb_bit_and)(MEObject*, MEObject*);
 typedef MEObject* (*fn_nb_bit_or)(MEObject*, MEObject*);
 typedef MEObject* (*fn_nb_bit_xor)(MEObject*, MEObject*);
-typedef MEObject* (*fn_nb_bit_not)(MEObject*);
 typedef MEObject* (*fn_nb_lshift)(MEObject*, MEObject*);
 typedef MEObject* (*fn_nb_rshift)(MEObject*, MEObject*);
 typedef MEObject* (*fn_cmp)(MEObject*, MEObject*, MECmpOp);
+
+typedef MEObject* (*fn_unary_bit_not)(MEObject*);
 
 struct METypeObject {
     const char* tp_name;
@@ -62,9 +64,11 @@ struct METypeObject {
     fn_nb_bit_and tp_nb_bit_and;
     fn_nb_bit_or tp_nb_bit_or;
     fn_nb_bit_xor tp_nb_bit_xor;
-    fn_nb_bit_not tp_nb_bit_not;
     fn_nb_lshift tp_nb_lshift;
     fn_nb_rshift tp_nb_rshift;
+    
+    fn_unary_bit_not tp_unary_bit_not;
+
 
     fn_cmp tp_cmp;
 };

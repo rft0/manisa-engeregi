@@ -59,9 +59,10 @@ METypeObject me_type_bool = {
     .tp_nb_bit_and = NULL,
     .tp_nb_bit_or = NULL,
     .tp_nb_bit_xor = NULL,
-    .tp_nb_bit_not = NULL,
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
+
+    .tp_unary_bit_not = NULL,
 
     .tp_cmp = NULL,
 };
@@ -75,9 +76,10 @@ void me_bool_init() {
     me_type_bool.tp_nb_bit_and = me_type_long.tp_nb_bit_and;
     me_type_bool.tp_nb_bit_or = me_type_long.tp_nb_bit_or;
     me_type_bool.tp_nb_bit_xor = me_type_long.tp_nb_bit_xor;
-    me_type_bool.tp_nb_bit_not = me_type_long.tp_nb_bit_not;
     me_type_bool.tp_nb_lshift = me_type_long.tp_nb_lshift;
     me_type_bool.tp_nb_rshift = me_type_long.tp_nb_rshift;
+
+    me_type_bool.tp_unary_bit_not = me_type_long.tp_unary_bit_not;
 
     me_type_bool.tp_cmp = me_type_long.tp_cmp;
 }

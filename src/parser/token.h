@@ -42,7 +42,6 @@ typedef enum {
     TOKEN_ASSIGN_BIT_AND,
     TOKEN_ASSIGN_BIT_OR,
     TOKEN_ASSIGN_BIT_XOR,
-    TOKEN_ASSIGN_BIT_NOT,
 
     // Unary Operators
     TOKEN_UNARY_NOT,

@@ -174,15 +174,6 @@ MEObject* long_nb_bit_xor(MEObject* v, MEObject* w) {
     return me_long_from_long(lv->ob_value ^ lw->ob_value);
 }
 
-MEObject* long_nb_bit_not(MEObject* v) {
-    if (!me_long_check(v))
-        return me_error_notimplemented;
-
-    MELongObject* lv = (MELongObject*)v;
-
-    return me_long_from_long(~lv->ob_value);
-}
-
 MEObject* long_nb_lshift(MEObject* v, MEObject* w) {
     if (!me_long_check(v) || !me_long_check(w))
         return me_error_notimplemented;
@@ -203,6 +194,15 @@ MEObject* long_nb_rshift(MEObject* v, MEObject* w) {
     return me_long_from_long(lv->ob_value >> lw->ob_value);
 }
 
+MEObject* long_unary_bit_not(MEObject* v) {
+    if (!me_long_check(v))
+        return me_error_notimplemented;
+
+    MELongObject* lv = (MELongObject*)v;
+
+    return me_long_from_long(~lv->ob_value);
+}
+
 METypeObject me_type_long = {
     .tp_name = "long",
     .tp_base = NULL,
@@ -220,9 +220,10 @@ METypeObject me_type_long = {
     .tp_nb_bit_and = (fn_nb_bit_and)long_nb_bit_and,
     .tp_nb_bit_or = (fn_nb_bit_or)long_nb_bit_or,
     .tp_nb_bit_xor = (fn_nb_bit_xor)long_nb_bit_xor,
-    .tp_nb_bit_not = (fn_nb_bit_not)long_nb_bit_not,
     .tp_nb_lshift = (fn_nb_lshift)long_nb_lshift,
     .tp_nb_rshift = (fn_nb_rshift)long_nb_rshift,
+
+    .tp_unary_bit_not = (fn_unary_bit_not)long_unary_bit_not,
 
     .tp_cmp = (fn_cmp)long_cmp,
 };

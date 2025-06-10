@@ -46,9 +46,10 @@ METypeObject me_type_none = {
     .tp_nb_bit_and = NULL,
     .tp_nb_bit_or = NULL,
     .tp_nb_bit_xor = NULL,
-    .tp_nb_bit_not = NULL,
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
+
+    .tp_unary_bit_not = NULL,
 
     .tp_cmp = (fn_cmp)none_cmp,
 };

@@ -78,7 +78,6 @@ const char* lut_token_to_str[] = {
     [TOKEN_ASSIGN_BIT_AND] = "ASSIGN_BIT_AND",
     [TOKEN_ASSIGN_BIT_OR] = "ASSIGN_BIT_OR",
     [TOKEN_ASSIGN_BIT_XOR] = "ASSIGN_BIT_XOR",
-    [TOKEN_ASSIGN_BIT_NOT] = "ASSIGN_BIT_NOT",
 
     // Unary Operators
     [TOKEN_UNARY_NOT] = "UNARY_NOT",
@@ -164,5 +163,13 @@ BinaryOp lut_compound_to_binop[] = {
     [TOKEN_ASSIGN_BIT_AND] = BIN_BIT_AND,
     [TOKEN_ASSIGN_BIT_OR] = BIN_BIT_OR,
     [TOKEN_ASSIGN_BIT_XOR] = BIN_BIT_XOR,
-    [TOKEN_ASSIGN_BIT_NOT] = BIN_BIT_NOT,
+};
+
+MECmpOp lut_binop_to_cmpop[] = {
+    [BIN_EQ] = ME_CMP_EQ,
+    [BIN_NEQ] = ME_CMP_NEQ,
+    [BIN_LT] = ME_CMP_LT,
+    [BIN_LTE] = ME_CMP_LTE,
+    [BIN_GT] = ME_CMP_GT,
+    [BIN_GTE] = ME_CMP_GTE,
 };

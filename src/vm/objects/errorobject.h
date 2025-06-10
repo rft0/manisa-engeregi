@@ -3,7 +3,7 @@
 
 #include "../object.h"
 
-void me_set_error(MEObject* error, const char* msg);
+void me_set_error(MEObject* error, const char* fmt, ...);
 MEObject* me_get_error();
 
 extern MEObject* me_error_divisionbyzero;

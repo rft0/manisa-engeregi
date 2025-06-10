@@ -2,7 +2,12 @@
 
 #include "strobject.h"
 
-struct {
+#include <stdarg.h>
+#include <stdio.h>
+
+#define MAX_ERROR_MSG_LEN 256
+
+static struct {
     const char* error_msg;
     MEObject* error_obj;
 } me_global_error = {NULL, NULL}; 
@@ -12,9 +17,18 @@ METypeObject me_type_error_typemismatch;
 METypeObject me_type_error_notimplemented;
 METypeObject me_type_error_outofmemory;
 
-void me_set_error(MEObject* error, const char* msg) {
-    me_global_error.error_msg = msg;
+void me_set_error(MEObject* error, const char* fmt, ...) {
     me_global_error.error_obj = error;
+    
+    char buffer[MAX_ERROR_MSG_LEN];
+
+    va_list args;
+    va_start(args, fmt);
+    
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    me_global_error.error_msg = buffer;
+    
+    va_end(args);
 }
 
 MEObject* me_get_error() {
@@ -87,9 +101,9 @@ METypeObject me_type_error_divisionbyzero = {
     .tp_nb_bit_and = NULL,
     .tp_nb_bit_or = NULL,
     .tp_nb_bit_xor = NULL,
-    .tp_nb_bit_not = NULL,
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
+    .tp_unary_bit_not = NULL,
     .tp_cmp = NULL
 };
 
@@ -108,9 +122,9 @@ METypeObject me_type_error_typemismatch = {
     .tp_nb_bit_and = NULL,
     .tp_nb_bit_or = NULL,
     .tp_nb_bit_xor = NULL,
-    .tp_nb_bit_not = NULL,
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
+    .tp_unary_bit_not = NULL,
     .tp_cmp = NULL
 };
 
@@ -129,9 +143,9 @@ METypeObject me_type_error_notimplemented = {
     .tp_nb_bit_and = NULL,
     .tp_nb_bit_or = NULL,
     .tp_nb_bit_xor = NULL,
-    .tp_nb_bit_not = NULL,
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
+    .tp_unary_bit_not = NULL,
     .tp_cmp = NULL
 };
 
@@ -151,8 +165,8 @@ METypeObject me_type_error_outofmemory = {
     .tp_nb_bit_and = NULL,
     .tp_nb_bit_or = NULL,
     .tp_nb_bit_xor = NULL,
-    .tp_nb_bit_not = NULL,
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
+    .tp_unary_bit_not = NULL,
     .tp_cmp = NULL
 };
