@@ -12,7 +12,7 @@ typedef struct {
     size_t ob_bytelength;
 } MEStrObject;
 
-static inline int me_str_check(MEObject* obj) {
+inline int me_str_check(MEObject* obj) {
     return ME_TYPE_CHECK(obj, &me_type_str);
 }
 

@@ -43,9 +43,11 @@ typedef MEObject* (*fn_nb_bit_or)(MEObject*, MEObject*);
 typedef MEObject* (*fn_nb_bit_xor)(MEObject*, MEObject*);
 typedef MEObject* (*fn_nb_lshift)(MEObject*, MEObject*);
 typedef MEObject* (*fn_nb_rshift)(MEObject*, MEObject*);
+typedef MEObject* (*fn_unary_bit_not)(MEObject*);
+typedef MEObject* (*fn_unary_positive)(MEObject*);
+typedef MEObject* (*fn_unary_negative)(MEObject*);
 typedef MEObject* (*fn_cmp)(MEObject*, MEObject*, MECmpOp);
 
-typedef MEObject* (*fn_unary_bit_not)(MEObject*);
 
 struct METypeObject {
     const char* tp_name;
@@ -67,6 +69,8 @@ struct METypeObject {
     fn_nb_lshift tp_nb_lshift;
     fn_nb_rshift tp_nb_rshift;
     
+    fn_unary_negative tp_unary_negative;
+    fn_unary_positive tp_unary_positive;
     fn_unary_bit_not tp_unary_bit_not;
 
 

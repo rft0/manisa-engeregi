@@ -172,6 +172,20 @@ static MEObject* float_nb_mod(MEObject* v, MEObject* w) {
     }
 }
 
+static MEObject* float_unary_negative(MEObject* v) {
+    if (me_float_check(v))
+        return me_float_from_double(-((MEFloatObject*)v)->ob_value);
+    else
+        return me_error_notimplemented;
+}
+
+static MEObject* float_unary_positive(MEObject* v) {
+    if (me_float_check(v))
+        return me_float_from_double(((MEFloatObject*)v)->ob_value);
+    else
+        return me_error_notimplemented;
+}
+
 METypeObject me_type_float = {
     .tp_name = "float",
     .tp_base = NULL,
@@ -191,6 +205,8 @@ METypeObject me_type_float = {
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
 
+    .tp_unary_negative = (fn_unary_negative)float_unary_negative,
+    .tp_unary_positive = (fn_unary_positive)float_unary_positive,
     .tp_unary_bit_not = NULL,
 
     .tp_cmp = (fn_cmp)float_cmp,

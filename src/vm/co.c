@@ -226,8 +226,9 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                     hashmap_get(co->co_h_globals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx);
                     co_bc_opoperand(co, CO_OP_STORE_GLOBAL, idx, 2);
                 } else {
-                    idx = hashmap_size(co->co_h_globals);
+                    idx = darray_size(co->co_h_globals);
                     hashmap_set(co->co_h_globals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t)idx);
+                    darray_pushd(co->co_globals, me_none);
                     co_bc_opoperand(co, CO_OP_STORE_GLOBAL, idx, 2);
                 }
             } else {
@@ -235,8 +236,9 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                     hashmap_get(co->co_h_locals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx);
                     co_bc_opoperand(co, CO_OP_STORE_VARIABLE, idx, 2);
                 } else {
-                    idx = hashmap_size(co->co_h_locals);
+                    idx = darray_size(co->co_h_locals);
                     hashmap_set(co->co_h_locals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t)idx);
+                    darray_pushd(co->co_locals, me_none);
                     co_bc_opoperand(co, CO_OP_STORE_VARIABLE, idx, 2);
                 }
             }
@@ -316,8 +318,9 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
             for (size_t i = 0; i < darray_size(stmt->function_decl->params); i++) {
                 Expr* param = stmt->function_decl->params[i];
                 if (param->kind == EXPR_VARIABLE) {
-                    uint16_t param_idx = hashmap_size(func_co->co_h_locals);
+                    uint16_t param_idx = darray_size(func_co->co_h_locals);
                     hashmap_set(func_co->co_h_locals, param->variable->name.data, param->variable->name.byte_len, (uintptr_t)param_idx);
+                    darray_pushd(func_co->co_locals, me_none);
                 }
             }
             
@@ -346,16 +349,18 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                 if (hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
                     hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
                 } else {
-                    name_idx = hashmap_size(co->co_h_globals);
+                    name_idx = darray_size(co->co_h_globals);
                     hashmap_set(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t)name_idx);
+                    darray_pushd(co->co_globals, me_none);
                 }
                 co_bc_opoperand(co, CO_OP_STORE_GLOBAL, name_idx, 2);
-            } else { // This is not allowed and code should never reach here
+            } else { // This is not allowed and code should never reach here for now, I will  handle this after adding an hashmap like object
                 if (hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
                     hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
                 } else {
-                    name_idx = hashmap_size(co->co_h_locals);
+                    name_idx = darray_size(co->co_h_locals);
                     hashmap_set(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t)name_idx);
+                    darray_pushd(co->co_locals, me_none);
                 }
                 co_bc_opoperand(co, CO_OP_STORE_VARIABLE, name_idx, 2);
             }

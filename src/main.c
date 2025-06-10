@@ -14,6 +14,7 @@
 #include "parser/parser.h"
 #include "parser/analyser.h"
 
+#include "vm/objects/errorobject.h"
 #include "vm/co.h"
 #include "vm/vm.h"
 
@@ -90,12 +91,24 @@ int main(int argc, char *argv[]) {
 
     MEVM* vm = me_vm_new(co);
     MEVMExitCode res = me_vm_run(vm);
+    if (res == MEVM_EXIT_ERROR) {
+        const char* msg = me_get_error_msg();
+        fprintf(stderr, "Runtime error: %s\n", msg);
+        me_vm_free(vm);
+        lut_free();
+        return 1;
+    }
+
     if (res != MEVM_EXIT_OK) {
         fprintf(stderr, "Runtime error occurred during execution.\n");
         me_vm_free(vm);
         lut_free();
-        return res;
+        return 1;
     }
+
+#ifdef ME_DEBUG
+    printf("Execution fin.\n");
+#endif
 
 
     me_vm_free(vm);

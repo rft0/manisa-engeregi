@@ -4,7 +4,8 @@
 #include "../object.h"
 
 void me_set_error(MEObject* error, const char* fmt, ...);
-MEObject* me_get_error();
+MEObject* me_get_error_obj();
+const char* me_get_error_msg();
 
 extern MEObject* me_error_divisionbyzero;
 extern MEObject* me_error_typemismatch;

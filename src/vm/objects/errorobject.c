@@ -31,10 +31,13 @@ void me_set_error(MEObject* error, const char* fmt, ...) {
     va_end(args);
 }
 
-MEObject* me_get_error() {
+MEObject* me_get_error_obj() {
     return me_global_error.error_obj;
 }
 
+const char* me_get_error_msg() {
+    return me_global_error.error_msg;
+}
 
 struct {
     ME_OBJHEAD
@@ -103,6 +106,8 @@ METypeObject me_type_error_divisionbyzero = {
     .tp_nb_bit_xor = NULL,
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
+    .tp_unary_negative = NULL,
+    .tp_unary_positive = NULL,
     .tp_unary_bit_not = NULL,
     .tp_cmp = NULL
 };
@@ -124,6 +129,8 @@ METypeObject me_type_error_typemismatch = {
     .tp_nb_bit_xor = NULL,
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
+    .tp_unary_negative = NULL,
+    .tp_unary_positive = NULL,
     .tp_unary_bit_not = NULL,
     .tp_cmp = NULL
 };
@@ -145,6 +152,8 @@ METypeObject me_type_error_notimplemented = {
     .tp_nb_bit_xor = NULL,
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
+    .tp_unary_negative = NULL,
+    .tp_unary_positive = NULL,
     .tp_unary_bit_not = NULL,
     .tp_cmp = NULL
 };
@@ -167,6 +176,8 @@ METypeObject me_type_error_outofmemory = {
     .tp_nb_bit_xor = NULL,
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
+    .tp_unary_negative = NULL,
+    .tp_unary_positive = NULL,
     .tp_unary_bit_not = NULL,
     .tp_cmp = NULL
 };

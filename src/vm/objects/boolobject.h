@@ -13,8 +13,12 @@ typedef struct {
     long ob_value;
 } MEBoolObject;
 
-static inline int me_bool_check(MEObject* obj) {
+inline int me_bool_check(MEObject* obj) {
     return ME_TYPE_CHECK(obj, &me_type_bool);
+}
+
+inline int me_is_true(MEObject* obj) {
+    return ME_TYPE(obj)->tp_bool(obj) == me_true;
 }
 
 void me_bool_init();

@@ -30,16 +30,16 @@ MEObject* me_bool_from_str(MEObject* str) {
     return (ME_TYPE_CHECK(str, &me_type_str) && ((MEStrObject*)str)->ob_length > 0) ? me_true : me_false;
 }
 
-static void bool_dealloc(MEBoolObject* obj) {
+static void bool_dealloc(MEObject* obj) {
     free(obj);
 }
 
-static MEObject* bool_str(MEBoolObject* obj) {
-    return me_str_from_long(obj->ob_value);
+static MEObject* bool_str(MEObject* obj) {
+    return me_str_from_long(((MEBoolObject*)obj)->ob_value);
 }
 
-static MEObject* bool_bool(MEBoolObject* obj) {
-    return obj->ob_value ? me_true : me_false;
+static MEObject* bool_bool(MEObject* obj) {
+    return ((MEBoolObject*)obj)->ob_value ? me_true : me_false;
 }
 
 METypeObject me_type_bool = {
@@ -62,6 +62,8 @@ METypeObject me_type_bool = {
     .tp_nb_lshift = NULL,
     .tp_nb_rshift = NULL,
 
+    .tp_unary_negative = NULL,
+    .tp_unary_positive = NULL,
     .tp_unary_bit_not = NULL,
 
     .tp_cmp = NULL,
@@ -79,6 +81,8 @@ void me_bool_init() {
     me_type_bool.tp_nb_lshift = me_type_long.tp_nb_lshift;
     me_type_bool.tp_nb_rshift = me_type_long.tp_nb_rshift;
 
+    me_type_bool.tp_unary_negative = me_type_long.tp_unary_negative;
+    me_type_bool.tp_unary_positive = me_type_long.tp_unary_positive;
     me_type_bool.tp_unary_bit_not = me_type_long.tp_unary_bit_not;
 
     me_type_bool.tp_cmp = me_type_long.tp_cmp;

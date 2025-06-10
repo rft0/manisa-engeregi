@@ -7,6 +7,7 @@
 
 #include "objects/functionobject.h"
 #include "objects/errorobject.h"
+#include "objects/boolobject.h"
 #include "object.h"
 
 #define TOP(vm) ((vm)->stack[(vm)->sp - 1])
@@ -16,7 +17,6 @@
 MEObject* me_binary_op(MEObject* lhs, MEObject* rhs, BinaryOp op);
 MEObject* me_unary_op(MEObject* obj, UnaryOp op);
 MEObject* me_function_call(MEObject* func_obj, MEObject** args, uint8_t arg_count);
-MEObject* me_is_true(MEObject* obj);
 
 MEObject* me_binary_add(MEObject* lhs, MEObject* rhs);
 MEObject* me_binary_sub(MEObject* lhs, MEObject* rhs);
@@ -128,17 +128,10 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                     return MEVM_EXIT_STACK_UNDERFLOW;
 
                 MEObject** args = malloc(arg_count * sizeof(MEObject*));
-                for (uint8_t i = 0; i < arg_count; i++) {
+                for (int i = 0; i < arg_count; i++)
                     args[arg_count - 1 - i] = POP(vm);
-                }
 
                 MEObject* func_obj = POP(vm);
-                if (!me_function_check(func_obj)) {
-                    // NON CALLABLE OBJECT
-                    free(args);
-                    return MEVM_EXIT_ERROR;
-                }
-
                 MEObject* result = me_function_call(func_obj, args, arg_count);
                 free(args);
 
@@ -196,11 +189,6 @@ void me_vm_free(MEVM* vm) {
     free(vm);
 }
 
-// MEObject* me_binary_op(MEObject* lhs, MEObject* rhs, BinaryOp op);
-// MEObject* me_unary_op(MEObject* obj, UnaryOp op);
-// MEObject* me_function_call(MEObject* func_obj, MEObject** args, uint8_t arg_count);
-// MEObject* me_is_true(MEObject* obj);
-
 MEObject* me_binary_op(MEObject* lhs, MEObject* rhs, BinaryOp op) {
     switch (op) {
         case BIN_ASSIGN:
@@ -235,7 +223,6 @@ MEObject* me_binary_op(MEObject* lhs, MEObject* rhs, BinaryOp op) {
         default:
             break;
     }
-
 
     me_set_error(me_error_notimplemented, "Something went wrong between \"%s\" and \"%s\".", ME_TYPE_NAME(lhs), ME_TYPE_NAME(rhs));
     return NULL;
@@ -438,3 +425,64 @@ MEObject* me_binary_cmp(MEObject* lhs, MEObject* rhs, BinaryOp op) {
 
     return result;
 }
+
+MEObject* me_unary_op(MEObject* obj, UnaryOp op) {
+    switch (op) {
+        case UNARY_BIT_NOT:
+            if (!ME_TYPE(obj)->tp_unary_bit_not) {
+                me_set_error(me_error_notimplemented, "Unary bit not not implemented for operand type: \"%s\".", ME_TYPE_NAME(obj));
+                return NULL;
+            }
+
+            return ME_TYPE(obj)->tp_unary_bit_not(obj);
+        case UNARY_POSITIVE:
+            if (!ME_TYPE(obj)->tp_unary_positive) {
+                me_set_error(me_error_notimplemented, "Unary positive not implemented for operand type: \"%s\".", ME_TYPE_NAME(obj));
+                return NULL;
+            }
+
+            return ME_TYPE(obj)->tp_unary_positive(obj);
+        case UNARY_NEGATIVE:
+            if (!ME_TYPE(obj)->tp_unary_negative) {
+                me_set_error(me_error_notimplemented, "Unary negative not implemented for operand type: \"%s\".", ME_TYPE_NAME(obj));
+                return NULL;
+            }
+
+            return ME_TYPE(obj)->tp_unary_negative(obj);
+        case UNARY_LOGICAL_NOT: {
+            if (!ME_TYPE(obj)->tp_bool) {
+                me_set_error(me_error_notimplemented, "Unary logical not not implemented for \"%s\".", ME_TYPE_NAME(obj));
+                return NULL;
+            }
+
+            MEObject* result = ME_TYPE(obj)->tp_bool(obj);
+            if (result == me_error_notimplemented) {
+                me_set_error(me_error_notimplemented, "Unary logical not not implemented for \"%s\".", ME_TYPE_NAME(obj));
+                return NULL;
+            }
+
+            return ME_TYPE(obj)->tp_bool(obj);
+        }
+        case UNARY_POST_INC:
+        case UNARY_POST_DEC:
+        case UNARY_PRE_INC:
+        case UNARY_PRE_DEC:
+            // WE EXPAND THOSE OPS IN BYTECODE GENERATION SO THEY DO NOT EXIST DIRECTLY IN BYTECODE
+            me_set_error(me_error_notimplemented, "Unknown unary operation for operand \"%s\".", ME_TYPE_NAME(obj));
+            return NULL;
+
+    }
+}
+
+MEObject* me_function_call(MEObject* func_obj, MEObject** args, uint8_t arg_count) {
+    if (!me_function_check(func_obj)) {
+        me_set_error(me_error_typemismatch, "Object is not callable: \"%s\".", ME_TYPE_NAME(func_obj));
+        return NULL;
+    }
+
+    MEFunctionObject* func = (MEFunctionObject*)func_obj;
+    // YET TO BE IMPLEMENTED.
+
+    return NULL;
+}
+
