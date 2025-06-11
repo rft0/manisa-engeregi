@@ -8,7 +8,7 @@ typedef struct METypeObject METypeObject;
 typedef struct MEObject MEObject;
 
 #define ME_INCREF(obj) do { if ((obj) != NULL) ++(obj)->ob_refcount; } while (0)
-#define ME_DECREF(obj) do { if (--(obj)->ob_refcount == 0) (obj)->type->tp_dealloc(obj); } while (0)
+#define ME_DECREF(obj) do { if (--(obj)->ob_refcount == 0) (obj)->ob_type->tp_dealloc(obj); } while (0)
 
 #define ME_OBJHEAD size_t ob_refcount; METypeObject* ob_type;
 

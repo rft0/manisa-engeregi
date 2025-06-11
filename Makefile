@@ -21,11 +21,13 @@ TARGET_DIR = bin
 TARGET_BIN = out
 TARGET = $(TARGET_DIR)/$(TARGET_BIN)
 
+LDLIBS = -lm
+
 all: $(TARGET) run
 
 $(TARGET): $(OBJS)
 	@mkdir -p $(TARGET_DIR)
-	$(CC) -o $@ $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LDLIBS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)

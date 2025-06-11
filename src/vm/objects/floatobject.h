@@ -10,7 +10,7 @@ typedef struct {
     double ob_value;
 } MEFloatObject;
 
-inline int me_float_check(MEObject* obj) {
+static inline int me_float_check(MEObject* obj) {
     return ME_TYPE_CHECK(obj, &me_type_float);
 }
 

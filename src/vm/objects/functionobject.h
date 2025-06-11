@@ -15,7 +15,7 @@ typedef struct {
     size_t nargs;
 } MEFunctionObject;
 
-inline int me_function_check(MEObject* obj) {
+static inline int me_function_check(MEObject* obj) {
     return ME_TYPE_CHECK(obj, &me_type_function);
 }
 

@@ -10,7 +10,7 @@ typedef struct {
     ME_OBJHEAD
 } MENoneObject;
 
-inline int me_none_check(MEObject* obj) {
+static inline int me_none_check(MEObject* obj) {
     return ME_TYPE_CHECK(obj, &me_type_none);
 }
 

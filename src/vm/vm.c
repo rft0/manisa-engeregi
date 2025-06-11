@@ -1,5 +1,7 @@
 #include "vm.h"
 
+#include <stdio.h>
+
 #include "../utils/darray.h"
 #include "../lut.h"
 
@@ -11,12 +13,13 @@
 #include "object.h"
 
 #define TOP(vm) ((vm)->stack[(vm)->sp - 1])
-#define POP(vm) (darray_pop((vm)->stack), (vm)->sp--, TOP(vm))
+// #define POP(vm) (darray_pop((vm)->stack), (vm)->sp--, TOP(vm))
+#define POP(vm) ({ MEObject* obj = TOP(vm); darray_pop((vm)->stack); (vm)->sp--; obj; })
 #define PUSH(vm, obj) (darray_push((vm)->stack, (obj)), (vm)->sp++)
 
 MEObject* me_binary_op(MEObject* lhs, MEObject* rhs, BinaryOp op);
 MEObject* me_unary_op(MEObject* obj, UnaryOp op);
-MEObject* me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uint8_t arg_count);
+MEVMExitCode me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uint8_t arg_count);
 
 MEObject* me_binary_add(MEObject* lhs, MEObject* rhs);
 MEObject* me_binary_sub(MEObject* lhs, MEObject* rhs);
@@ -43,20 +46,26 @@ MEVM* me_vm_new(MECodeObject* co) {
 
 MEVMExitCode me_vm_run(MEVM* vm) {
     while (vm->ip < vm->co->co_size) {
+        // printf("%04u\n", vm->ip);
+    
         MECodeOp op = vm->co->co_bytecode[vm->ip++];
         switch (op) {
             case CO_OP_NOP:
                 break;
             case CO_OP_POP: {
-                if (vm->sp == 0)
-                    return MEVM_EXIT_STACK_UNDERFLOW;
+                if (vm->sp == 0) {
+                    me_set_error(me_error_generic, "Stack underflow.");
+                    return MEVM_EXIT_ERROR;
+                }
 
-                POP(vm);
+                MEObject* o = POP(vm);
                 break;
             }
             case CO_OP_DUP: {
-                if (vm->sp == 0)
-                    return MEVM_EXIT_STACK_UNDERFLOW;
+                if (vm->sp == 0) {
+                    me_set_error(me_error_generic, "Stack underflow.");
+                    return MEVM_EXIT_ERROR;
+                }
 
                 MEObject* top = TOP(vm);
                 PUSH(vm, top);
@@ -87,9 +96,12 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 uint16_t idx = *(uint16_t*)(vm->co->co_bytecode + vm->ip);
                 vm->ip += 2;
 
-                if (vm->sp == 0)
-                    return MEVM_EXIT_STACK_UNDERFLOW;
+                if (vm->sp == 0) {
+                    me_set_error(me_error_generic, "Stack underflow.");
+                    return MEVM_EXIT_ERROR;
+                }
 
+                printf("%s\n", ME_TYPE_NAME(vm->co->co_globals[idx]));
                 vm->co->co_globals[idx] = POP(vm);
                 break;
             }
@@ -97,18 +109,23 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 uint16_t idx = *(uint16_t*)(vm->co->co_bytecode + vm->ip);
                 vm->ip += 2;
 
-                if (vm->sp == 0)
-                    return MEVM_EXIT_STACK_UNDERFLOW;
+                if (vm->sp == 0) {
+                    me_set_error(me_error_generic, "Stack underflow.");
+                    return MEVM_EXIT_ERROR;
+                }
 
                 vm->co->co_locals[idx] = POP(vm);
                 break;
             }
             case CO_OP_BINARY_OP: {
-                if (vm->sp < 2)
-                    return MEVM_EXIT_STACK_UNDERFLOW;
+                if (vm->sp < 2) {
+                    me_set_error(me_error_generic, "Stack underflow.");
+                    return MEVM_EXIT_ERROR;
+                }
 
                 MEObject* rhs = POP(vm);
                 MEObject* lhs = POP(vm);
+
 
                 uint8_t op = vm->co->co_bytecode[vm->ip++];
                 MEObject* result = me_binary_op(lhs, rhs, op);
@@ -119,8 +136,10 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 break;
             }
             case CO_OP_UNARY_OP: {
-                if (vm->sp == 0)
-                    return MEVM_EXIT_STACK_UNDERFLOW;
+                if (vm->sp == 0) {
+                    me_set_error(me_error_generic, "Stack underflow.");
+                    return MEVM_EXIT_ERROR;
+                }
 
                 MEObject* obj = POP(vm);
                 uint8_t op = vm->co->co_bytecode[vm->ip++];
@@ -133,43 +152,45 @@ MEVMExitCode me_vm_run(MEVM* vm) {
             }
             case CO_OP_CALL_FUNCTION: {
                 uint8_t arg_count = vm->co->co_bytecode[vm->ip++];
-                if (vm->sp < arg_count)
-                    return MEVM_EXIT_STACK_UNDERFLOW;
+                if (vm->sp < arg_count) {
+                    me_set_error(me_error_generic, "Stack underflow.");
+                    return MEVM_EXIT_ERROR;
+                }
 
                 MEObject** args = malloc(arg_count * sizeof(MEObject*));
                 for (int i = 0; i < arg_count; i++)
                     args[arg_count - 1 - i] = POP(vm);
 
                 MEObject* func_obj = POP(vm);
-                MEObject* result = me_function_call(vm, func_obj, args, arg_count);
+                MEVMExitCode result = me_function_call(vm, func_obj, args, arg_count);
                 free(args);
 
-                if (!result)
-                    return MEVM_EXIT_ERROR;
+                if (result != MEVM_EXIT_OK)
+                    return result;
 
-                PUSH(vm, result);
+                // Result of the function is pushed to stack by child
                 break;
             }
             case CO_OP_RETURN: {
-                if (vm->sp == 0)
-                    return MEVM_EXIT_STACK_UNDERFLOW;
+                if (vm->sp == 0) {
+                    me_set_error(me_error_generic, "Stack underflow.");
+                    return MEVM_EXIT_ERROR;
+                }
 
                 MEObject* return_value = POP(vm);
-                if (vm->co->in_function) {
-                    vm->co->in_function = 0;
+                if (vm->parent)
                     PUSH(vm->parent, return_value);
-                } else {
-                    // For functions mainly
-                    return MEVM_EXIT_OK; // Exit the VM with the return value on the stack
-                }
+
                 break;
             }
             case CO_OP_JUMP_IF_FALSE: {
                 uint16_t jump_if_false_offset = *(uint16_t*)(vm->co->co_bytecode + vm->ip);
                 vm->ip += 2;
 
-                if (vm->sp == 0)
-                    return MEVM_EXIT_STACK_UNDERFLOW;
+                if (vm->sp == 0) {
+                    me_set_error(me_error_generic, "Stack underflow.");
+                    return MEVM_EXIT_ERROR;
+                }
 
                 MEObject* condition = POP(vm);
                 if (!me_is_true(condition)) {
@@ -185,7 +206,8 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 break;
             }
             default:
-                return MEVM_EXIT_INVALID_OPCODE;
+                me_set_error(me_error_generic, "Unknown opcode.");
+                return MEVM_EXIT_ERROR;
         }
     }
 
@@ -476,14 +498,13 @@ MEObject* me_unary_op(MEObject* obj, UnaryOp op) {
         case UNARY_POST_DEC:
         case UNARY_PRE_INC:
         case UNARY_PRE_DEC:
-            // WE EXPAND THOSE OPS IN BYTECODE GENERATION SO THEY DO NOT EXIST DIRECTLY IN BYTECODE
             me_set_error(me_error_notimplemented, "Unknown unary operation for operand \"%s\".", ME_TYPE_NAME(obj));
             return NULL;
 
     }
 }
 
-MEObject* me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uint8_t arg_count) {
+MEVMExitCode me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uint8_t arg_count) {
     if (!me_function_check(func_obj)) {
         me_set_error(me_error_typemismatch, "Object is not callable: \"%s\".", ME_TYPE_NAME(func_obj));
         return NULL;
@@ -492,19 +513,14 @@ MEObject* me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uint8_
     MEFunctionObject* func = (MEFunctionObject*)func_obj;
     if (arg_count != func->nargs) {
         me_set_error(me_error_generic, "Function \"%s\" expects %u arguments, got %u.", func->co->co_name, func->nargs, arg_count);
-        return NULL;
+        return MEVM_EXIT_ERROR;
     }
 
     MEVM* func_vm = me_vm_new(func->co);
     vm->parent = vm;
 
     MEVMExitCode exit = me_vm_run(vm);
-    if (exit != MEVM_EXIT_OK) {
-        me_set_error(me_error_generic, "Function \"%s\" exited with error code: %d.", func->co->co_name, exit);
-        me_vm_free(func_vm);
-        return NULL;
-    }
-
-    return NULL;
+    me_vm_free(func_vm);
+    return exit;
 }
 

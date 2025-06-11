@@ -309,11 +309,6 @@ static Token* get_token(Lexer* lexer) {
             return token_new(TOKEN_BIT_XOR, EMPTY_STRV, lexer->line, lexer->col);
         case '~':
             advance(lexer);
-            if (*lexer->c == '=') {
-                advance(lexer);
-                return token_new(TOKEN_ASSIGN_BIT_NOT, EMPTY_STRV, lexer->line, lexer->col);
-            }
-
             return token_new(TOKEN_BIT_NOT, EMPTY_STRV, lexer->line, lexer->col);
         case '"':
             return get_string(lexer);

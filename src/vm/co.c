@@ -180,12 +180,17 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
             if (op == UNARY_PRE_INC || op == UNARY_PRE_DEC || op == UNARY_POST_INC || op == UNARY_POST_DEC) {
                 co_compile_expr(co, expr->unary->operand);
         
-                co_bc_op(co, CO_OP_DUP);
+                if (op == UNARY_POST_INC || op == UNARY_POST_DEC)
+                    co_bc_op(co, CO_OP_DUP);
+
                 co_bc_opoperand(co, CO_OP_LOAD_CONST, 1, 2);
                 if (op == UNARY_PRE_INC || op == UNARY_POST_INC)
                     co_bc_opoperand(co, CO_OP_BINARY_OP, BIN_ADD, 1);
                 else
                     co_bc_opoperand(co, CO_OP_BINARY_OP, BIN_SUB, 1);
+
+                if (op == UNARY_PRE_INC || op == UNARY_PRE_DEC)
+                        co_bc_op(co, CO_OP_DUP);
 
                 uintptr_t idx = 0;
                 if (hashmap_get(co->co_h_locals, expr->unary->operand->variable->name.data, expr->unary->operand->variable->name.byte_len, NULL)) {
@@ -197,12 +202,6 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
                 }
                 
                 lnotab_forward(co, 7, expr->line);
-
-                if (op == UNARY_POST_INC || op == UNARY_POST_DEC) {
-                    co_bc_op(co, CO_OP_POP);
-                    lnotab_forward(co, 1, expr->line);
-                }
-
             } else {
                 co_compile_expr(co, expr->unary->operand);
                 co_bc_opoperand(co, CO_OP_UNARY_OP, op, 1);
@@ -256,7 +255,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                     hashmap_get(co->co_h_globals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx);
                     co_bc_opoperand(co, CO_OP_STORE_GLOBAL, idx, 2);
                 } else {
-                    idx = darray_size(co->co_h_globals);
+                    idx = darray_size(co->co_globals);
                     hashmap_set(co->co_h_globals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t)idx);
                     darray_pushd(co->co_globals, me_none);
                     co_bc_opoperand(co, CO_OP_STORE_GLOBAL, idx, 2);
@@ -266,7 +265,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                     hashmap_get(co->co_h_locals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t*)&idx);
                     co_bc_opoperand(co, CO_OP_STORE_VARIABLE, idx, 2);
                 } else {
-                    idx = darray_size(co->co_h_locals);
+                    idx = darray_size(co->co_locals);
                     hashmap_set(co->co_h_locals, stmt->decl_stmt->name.data, stmt->decl_stmt->name.byte_len, (uintptr_t)idx);
                     darray_pushd(co->co_locals, me_none);
                     co_bc_opoperand(co, CO_OP_STORE_VARIABLE, idx, 2);
@@ -348,7 +347,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
             for (size_t i = 0; i < darray_size(stmt->function_decl->params); i++) {
                 Expr* param = stmt->function_decl->params[i];
                 if (param->kind == EXPR_VARIABLE) {
-                    uint16_t param_idx = darray_size(func_co->co_h_locals);
+                    uint16_t param_idx = darray_size(func_co->co_locals);
                     hashmap_set(func_co->co_h_locals, param->variable->name.data, param->variable->name.byte_len, (uintptr_t)param_idx);
                     darray_pushd(func_co->co_locals, me_none);
                 }
@@ -379,7 +378,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                 if (hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
                     hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
                 } else {
-                    name_idx = darray_size(co->co_h_globals);
+                    name_idx = darray_size(co->co_globals);
                     hashmap_set(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t)name_idx);
                     darray_pushd(co->co_globals, me_none);
                 }
@@ -388,7 +387,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                 if (hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
                     hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
                 } else {
-                    name_idx = darray_size(co->co_h_locals);
+                    name_idx = darray_size(co->co_locals);
                     hashmap_set(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t)name_idx);
                     darray_pushd(co->co_locals, me_none);
                 }
@@ -537,6 +536,9 @@ void co_disasm(MECodeObject* co) {
             case CO_OP_POP:
                 printf("POP\n");
                 break;
+            case CO_OP_DUP:
+                printf("DUP\n");
+                break;
             default:
                 printf("UNKNOWN OP %u\n", op);
                 break;
@@ -552,7 +554,6 @@ void co_disasm(MECodeObject* co) {
         MEFunctionObject* func = (MEFunctionObject*)co->co_consts[i];
         printf("--------------------\n");
         printf("Function: %.*s, nargs: %zu\n", (int)utf8_strsize(func->co->co_name), func->co->co_name, func->nargs);
-        printf("Bytecode:\n");
         co_disasm(func->co);
         printf("--------------------\n");
     }
@@ -570,7 +571,7 @@ MECodeObject* co_new(const char* filename, Stmt** stmts) {
     co->co_globals = darray_new(MEObject*);
     co->co_locals = darray_new(MEObject*);
 
-    // IDX 0 RESERVED FOR NONE OBJECT, IDX 1 RESERVED FOR INT 1 OBJECT
+    // IDX 0 IS RESERVED FOR NONE OBJECT, IDX 1 IS RESERVED FOR INT 1 OBJECT
     darray_pushd(co->co_consts, me_none);
     darray_pushd(co->co_consts, me_long_from_long(1)); 
     co->co_lnotab = darray_new(uint8_t);

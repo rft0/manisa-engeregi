@@ -12,27 +12,7 @@
 #     b <= 3 <= 4;
 # }
 
-değişken a;
-değişken b;
-değişken c;
+sabit a = 1;
+sabit b = 2;
 
-# NOTE BIN_ASSIGN SHOULD ALWAYS PUSH VALUE TO STACK WHILE IGNORING LHS.
-c = a + b;
-
-marifet fn(aa, bb) {
-
-    tebliğ aa + bb;
-}
-
-fn(1, 2);
-
-sabit d = fn(1, 2);
-
-madem (a < 5) {
-    a += 1;
-    şayet (a == 3) {
-        yeter;
-    }
-}
-
-a = 5 + 5;
+sabit c = ++a;
