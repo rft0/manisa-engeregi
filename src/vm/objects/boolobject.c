@@ -5,18 +5,20 @@
 #include "strobject.h"
 #include "longobject.h"
 
-MEObject me_true_instance = {
+MEBoolObject me_true_instance = {
     .ob_type = &me_type_bool,
     .ob_refcount = 1,
+    .ob_value = 1,
 };
 
-MEObject me_false_instance = {
+MEBoolObject me_false_instance = {
     .ob_type = &me_type_bool,
     .ob_refcount = 1,
+    .ob_value = 0,
 };
 
-MEObject* me_true = &me_true_instance;
-MEObject* me_false = &me_false_instance;
+MEObject* me_true = (MEObject*)&me_true_instance;
+MEObject* me_false = (MEObject*)&me_false_instance;
 
 MEObject* me_bool_from_long(long value) {
     return value ? me_true : me_false;

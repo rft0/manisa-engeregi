@@ -231,10 +231,9 @@ static void analyse_function_decl(Analyser* analyser, Stmt* stmt) {
             (int)stmt->function_decl->name.byte_len, stmt->function_decl->name.data,
             existing->nargs);
     } else {
-        // Define function in the outermost scope (global)
         Symbol* func_symbol = symbol_new(
             stmt->function_decl->name, 
-            0,  // not const 
+            0,
             stmt->line, 
             stmt->col
         );
@@ -351,7 +350,7 @@ static void analyse_expr(Analyser* analyser, Expr* expr, int check_init) {
                     expr->line, expr->col,
                     "Undefined function '%.*s'", 
                     (int)expr->call->name.byte_len, expr->call->name.data);
-            } else if (symbol->nargs != darray_size(expr->call->args)) {
+            } else if (symbol->nargs != darray_size(expr->call->args) && symbol->nargs != -1) {
                 diags_new_diag(DIAG_SEMANTIC, DIAG_ERROR, analyser->filename, 
                     expr->line, expr->col,
                     "Function '%.*s' expects %d arguments but got %zu", 
@@ -384,6 +383,20 @@ static void analyse_expr(Analyser* analyser, Expr* expr, int check_init) {
         
         case EXPR_UNARY:
             analyse_expr(analyser, expr->unary->operand, 1);
+            if (expr->unary->op == UNARY_PRE_INC || expr->unary->op == UNARY_PRE_DEC || expr->unary->op == UNARY_POST_INC || expr->unary->op == UNARY_POST_INC) {
+                if (expr->unary->operand->kind == EXPR_VARIABLE) {
+                    Symbol* symbol = scope_lookup(analyser->current_scope, expr->unary->operand->variable->name);
+                    if (symbol) {
+                        if (symbol->is_const) {
+                            diags_new_diag(DIAG_SEMANTIC, DIAG_ERROR, analyser->filename, 
+                                expr->line, expr->col,
+                                "Cannot modify const variable '%.*s'", 
+                                (int)symbol->name.byte_len, symbol->name.data);
+                        }
+                        symbol->is_initialized = 1;
+                    }
+                }
+            }
             break;
         case EXPR_LITERAL:
             break;

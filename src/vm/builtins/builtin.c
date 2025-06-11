@@ -60,7 +60,7 @@ void me_register_builtins_co(MECodeObject* co) {
 
 void me_register_builtins_analyser(Analyser* analyser) {
     REGISTER_BUILTIN_ANALYZER(analyser, ME_BUILTIN_IO_PRINT, 1);
-    REGISTER_BUILTIN_ANALYZER(analyser, ME_BUILTIN_IO_INPUT, 0);
+    REGISTER_BUILTIN_ANALYZER(analyser, ME_BUILTIN_IO_INPUT, -1);
     REGISTER_BUILTIN_ANALYZER(analyser, ME_BUILTIN_IO_OPEN, 2);
     REGISTER_BUILTIN_ANALYZER(analyser, ME_BUILTIN_IO_CLOSE, 1);
     REGISTER_BUILTIN_ANALYZER(analyser, ME_BUILTIN_IO_READ, 2);

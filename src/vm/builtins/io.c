@@ -36,9 +36,19 @@ MEObject* me_io_print(MEObject* self, MEObject** args) {
 }
 
 MEObject* me_io_input(MEObject* self, MEObject** args) {
-    if (args) {
-        me_set_error(me_error_typemismatch, "input() does not take any arguments");
+    if (args && darray_size(args) > 1) {
+        me_set_error(me_error_typemismatch, "input() does take zero or one argument");
         return NULL;
+    }
+
+    if (args && darray_size(args) == 1 && !me_str_check(args[0])) {
+        me_set_error(me_error_typemismatch, "input() expects a string argument");
+        return NULL;
+    }
+    
+    if (args && darray_size(args) == 1) {
+        MEStrObject* prompt_obj = (MEStrObject*)args[0];
+        printf("%.*s", (int)prompt_obj->ob_bytelength, prompt_obj->ob_value);
     }
 
     size_t capacity = 256;

@@ -8,7 +8,7 @@
 #define MAX_ERROR_MSG_LEN 256
 
 static struct {
-    const char* error_msg;
+    const char error_msg[MAX_ERROR_MSG_LEN];
     MEObject* error_obj;
 } me_global_error = {NULL, NULL}; 
 
@@ -21,13 +21,10 @@ METypeObject me_type_error_outofmemory;
 void me_set_error(MEObject* error, const char* fmt, ...) {
     me_global_error.error_obj = error;
     
-    char buffer[MAX_ERROR_MSG_LEN];
-
     va_list args;
     va_start(args, fmt);
     
-    vsnprintf(buffer, sizeof(buffer), fmt, args);
-    me_global_error.error_msg = buffer;
+    vsnprintf((char*)me_global_error.error_msg, sizeof(me_global_error.error_msg), fmt, args);
     
     va_end(args);
 }

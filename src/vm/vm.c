@@ -197,6 +197,7 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 if (!me_is_true(condition)) {
                     vm->ip += jump_if_false_offset;
                 }
+
                 break;
             }
             case CO_OP_JUMP_REL: {
@@ -500,6 +501,7 @@ MEObject* me_unary_op(MEObject* obj, UnaryOp op) {
         case UNARY_POST_DEC:
         case UNARY_PRE_INC:
         case UNARY_PRE_DEC:
+        default:
             me_set_error(me_error_notimplemented, "Unknown unary operation for operand \"%s\".", ME_TYPE_NAME(obj));
             return NULL;
 

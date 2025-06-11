@@ -216,7 +216,7 @@ void stmt_dump(Stmt* s) {
             printf("])\n");
             break;
         case STMT_DECL:
-            printf("Declaration(%.*s, %s, ", (int)s->decl_stmt->name.len, s->decl_stmt->name.data, s->decl_stmt->is_const ? "const" : "var");
+            printf("Declaration(%.*s, %s, ", (int)s->decl_stmt->name.byte_len, s->decl_stmt->name.data, s->decl_stmt->is_const ? "const" : "var");
             expr_dump(s->decl_stmt->initializer);
             printf(")\n");
             break;
@@ -250,7 +250,7 @@ void stmt_dump(Stmt* s) {
             printf(")\n");
             break;
         case STMT_FUNCTION_DECL:
-            printf("MethodDecl(%.*s, [", (int)s->function_decl->name.len, s->function_decl->name.data);
+            printf("MethodDecl(%.*s, [", (int)s->function_decl->name.byte_len, s->function_decl->name.data);
             for (size_t i = 0; i < darray_size(s->function_decl->params); ++i) {
                 expr_dump(s->function_decl->params[i]);
                 if (i < darray_size(s->function_decl->params) - 1)
@@ -411,10 +411,10 @@ void expr_dump(Expr* e) {
 
     switch (e->kind) {
         case EXPR_LITERAL:
-            printf("Literal(%.*s)", (int)e->literal->value.len, e->literal->value.data);
+            printf("Literal(%.*s)", (int)e->literal->value.byte_len, e->literal->value.data);
             break;
         case EXPR_VARIABLE:
-            printf("Variable(%.*s)", (int)e->variable->name.len, e->variable->name.data);
+            printf("Variable(%.*s)", (int)e->variable->name.byte_len, e->variable->name.data);
             break;
         case EXPR_UNARY:
             printf("Unary(%d, ", e->unary->op);
@@ -429,7 +429,7 @@ void expr_dump(Expr* e) {
             printf(")");
             break;
         case EXPR_CALL:
-            printf("Call(%.*s, [", (int)e->call->name.len, e->call->name.data);
+            printf("Call(%.*s, [", (int)e->call->name.byte_len, e->call->name.data);
             for (size_t i = 0; i < darray_size(e->call->args); ++i) {
                 expr_dump(e->call->args[i]);
                 if (i < darray_size(e->call->args) - 1)
