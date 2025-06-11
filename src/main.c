@@ -51,10 +51,18 @@ int main(int argc, char *argv[]) {
     lut_init();
 
     Token** tokens = lex(filename, src);
-    // darray_for(tokens) token_dump(tokens[__i]);
+#ifdef ME_DEBUG
+    printf("Tokens:\n");
+    darray_for(tokens) token_dump(tokens[__i]);
+    printf("--------------------\n");
+#endif
 
     Stmt** stmts = parse(filename, tokens);
+#ifdef ME_DEBUG
+    printf("Statements:\n");
     darray_for(stmts) stmt_dump(stmts[__i]);
+    printf("--------------------\n");
+#endif
     analyse(filename, stmts);
 
     if (diags_errs_size() > 0) {
@@ -77,7 +85,9 @@ int main(int argc, char *argv[]) {
     }
 
     MECodeObject* co = co_new(filename, stmts);
+#ifdef ME_DEBUG
     co_disasm(co);
+#endif
     
     darray_for(tokens) free(tokens[__i]);
     darray_free(tokens);
@@ -85,8 +95,8 @@ int main(int argc, char *argv[]) {
     darray_for(stmts) free(stmts[__i]);
     darray_free(stmts);
 
-    // diags_dump();
-    // diags_free();
+    diags_dump();
+    diags_free();
     free(src);
 
     MEVM* vm = me_vm_new(co);

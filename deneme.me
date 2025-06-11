@@ -5,15 +5,29 @@ marifet ekle(x, y) {
 sabit a = 1;
 sabit b = 2;
 
-sabit c = ++a;
-çıktı(c);
+çıktı(float("3"));
+çıktı(ekle(a, b));
 
-çıktı("EY DÜNYA");
-çıktı(3.14);
-çıktı(ekle(1, 2));
+çıktı("Selam, " + "dünya!");
 
-sabit dosya_handle = aç("test.txt", "r");
-sabit içerik = oku(dosya_handle, -1);
-kapat(dosya_handle);
+# sabit c = ++a;
+# çıktı(c);
 
-çıktı(içerik);
+# çıktı("EY DÜNYA");
+# çıktı(3.14);
+# çıktı(ekle(1, 2));
+
+# sabit dosya_handle = aç("test.txt", "r");
+# sabit içerik = oku(dosya_handle, -1);
+# kapat(dosya_handle);
+
+# çıktı(içerik);
+
+# madem (1 == 1) {
+#     şayet (a == 5) {
+#        yeter;
+#    }
+# 
+#     çıktı(a)
+#     a++;
+# }
