@@ -181,6 +181,7 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 if (vm->parent)
                     PUSH(vm->parent, return_value);
 
+                return MEVM_EXIT_OK;
                 break;
             }
             case CO_OP_JUMP_IF_FALSE: {
@@ -216,7 +217,8 @@ MEVMExitCode me_vm_run(MEVM* vm) {
 
 void me_vm_free(MEVM* vm) {
     darray_free(vm->stack);
-    co_free(vm->co);
+    if (!vm->parent)
+        co_free(vm->co);
     free(vm);
 }
 
@@ -513,9 +515,12 @@ MEVMExitCode me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uin
         }
     
         MEVM* func_vm = me_vm_new(func->co);
-        vm->parent = vm;
-    
-        MEVMExitCode exit = me_vm_run(vm);
+        func_vm->parent = vm;
+
+        for (int i = 0; i < arg_count; i++)
+            func_vm->co->co_locals[i] = args[arg_count - 1 - i];
+
+        MEVMExitCode exit = me_vm_run(func_vm);
         me_vm_free(func_vm);
         return exit;
     } else if (me_builtinfn_check(func_obj)) {
@@ -524,9 +529,9 @@ MEVMExitCode me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uin
             return MEVM_EXIT_ERROR;
 
         PUSH(vm, result);
+
         return MEVM_EXIT_OK;
     }
-
 
     me_set_error(me_error_typemismatch, "Object is not callable: \"%s\".", ME_TYPE_NAME(func_obj));
     return MEVM_EXIT_ERROR;
