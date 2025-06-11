@@ -157,13 +157,13 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                     return MEVM_EXIT_ERROR;
                 }
 
-                MEObject** args = malloc(arg_count * sizeof(MEObject*));
+                MEObject** args = darray_new(MEObject*);
                 for (int i = 0; i < arg_count; i++)
-                    args[arg_count - 1 - i] = POP(vm);
+                    darray_pushd(args, POP(vm));
 
                 MEObject* func_obj = POP(vm);
                 MEVMExitCode result = me_function_call(vm, func_obj, args, arg_count);
-                free(args);
+                darray_free(args);
 
                 if (result != MEVM_EXIT_OK)
                     return result;
@@ -529,6 +529,6 @@ MEVMExitCode me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uin
 
 
     me_set_error(me_error_typemismatch, "Object is not callable: \"%s\".", ME_TYPE_NAME(func_obj));
-    return NULL;
+    return MEVM_EXIT_ERROR;
 }
 

@@ -1,18 +1,14 @@
-# sabit a = 3;;
-# marifet asd(a) {
-#     şayet ((a = 5) && a == 5) {
-#         ;;;;;;;;
-#     }
-# 
-#     değişken b = a + 5;
-#     5 = 1;
-#     c = 5;
-#     b += yok;
-#     b == 5;
-#     b <= 3 <= 4;
-# }
-
 sabit a = 1;
 sabit b = 2;
 
 sabit c = ++a;
+
+çıktı("asd");
+çıktı(12);
+çıktı(121.12);
+
+sabit dosya_handle = aç("test.txt", "r");
+sabit içerik = oku(dosya_handle, -1);
+kapat(dosya_handle);
+
+çıktı(içerik);

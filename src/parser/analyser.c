@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "../vm/builtins/builtin.h"
+
 #include "../utils/hashmap.h"
 #include "../utils/darray.h"
 #include "../utils/str.h"
@@ -10,14 +12,14 @@
 #include "../diag/diag.h"
 #include "stmt.h"
 
-typedef struct Symbol {
-    StringView name;
-    int is_const;
-    int is_initialized;
-    int nargs;
-    int line;
-    int col;
-} Symbol;
+// typedef struct Symbol {
+//     StringView name;
+//     int is_const;
+//     int is_initialized;
+//     int nargs;
+//     int line;
+//     int col;
+// } Symbol;
 
 typedef struct Method {
     StringView name;
@@ -26,21 +28,21 @@ typedef struct Method {
     int col;
 } Method;
 
-typedef struct Scope {
-    struct Scope* parent;
-    HashMap* symbols;
-    int depth;
-} Scope;
+// typedef struct Scope {
+//     struct Scope* parent;
+//     HashMap* symbols;
+//     int depth;
+// } Scope;
 
-typedef struct Analyser {
-    const char* filename;
-    Stmt** stmts;
-    int index;
+// typedef struct Analyser {
+//     const char* filename;
+//     Stmt** stmts;
+//     int index;
 
-    Scope* current_scope;
-    int inside_loop;
-    int inside_function;
-} Analyser;
+//     Scope* current_scope;
+//     int inside_loop;
+//     int inside_function;
+// } Analyser;
 
 // Forward decls
 static void analyser_init(Analyser* analyser, const char* filename, Stmt** stmts);
@@ -62,11 +64,11 @@ static void scope_free(Scope* scope);
 static void scope_enter(Analyser* ctx);
 static void scope_exit(Analyser* ctx);
 
-static Symbol* symbol_new(StringView name, int is_const, int line, int col);
-static void symbol_free(Symbol* symbol);
+Symbol* symbol_new(StringView name, int is_const, int line, int col);
+void symbol_free(Symbol* symbol);
 static Symbol* scope_lookup(Scope* scope, StringView name);
 static Symbol* scope_lookup_current(Scope* scope, StringView name);
-static int scope_define(Scope* scope, Symbol* symbol);
+int scope_define(Scope* scope, Symbol* symbol);
 
 static void analyser_init(Analyser* analyser, const char* filename, Stmt** stmts) {
     analyser->filename = filename;
@@ -120,7 +122,7 @@ static void scope_exit(Analyser* ctx) {
     scope_free(old);
 }
 
-static Symbol* symbol_new(StringView name, int is_const, int line, int col) {
+Symbol* symbol_new(StringView name, int is_const, int line, int col) {
     Symbol* symbol = malloc(sizeof(Symbol));
     symbol->name = name;
     symbol->is_const = is_const;
@@ -130,7 +132,7 @@ static Symbol* symbol_new(StringView name, int is_const, int line, int col) {
     return symbol;
 }
 
-static void symbol_free(Symbol* symbol) {
+void symbol_free(Symbol* symbol) {
     free(symbol);
 }
 
@@ -155,7 +157,7 @@ static Symbol* scope_lookup(Scope* scope, StringView name) {
     return scope_lookup(scope->parent, name);
 }
 
-static int scope_define(Scope* scope, Symbol* symbol) {
+int scope_define(Scope* scope, Symbol* symbol) {
     if (scope_lookup_current(scope, symbol->name))
         return 0;
     
@@ -391,6 +393,8 @@ static void analyse_expr(Analyser* analyser, Expr* expr, int check_init) {
 void analyse(const char* filename, Stmt** stmts) {
     Analyser analyser;
     analyser_init(&analyser, filename, stmts);
+
+    me_register_builtins_analyser(&analyser);
     
     scope_enter(&analyser);
     

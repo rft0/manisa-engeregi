@@ -385,7 +385,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
                     darray_pushd(co->co_globals, me_none);
                 }
                 co_bc_opoperand(co, CO_OP_STORE_GLOBAL, name_idx, 2);
-            } else { // This is not allowed and code should never reach here for now, I will  handle this after adding an hashmap like object
+            } else { // This is not allowed and code should never reach here for now, I will  handle this after adding an hashmap like object to runtime objects
                 if (hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
                     hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
                 } else {
@@ -587,7 +587,7 @@ MECodeObject* co_new(const char* filename, Stmt** stmts) {
     co->loop_end_pos = 0;
     co->break_patches = darray_new(uint32_t);
 
-    me_register_builtins(co);
+    me_register_builtins_co(co);
 
     for (size_t i = 0; i < darray_size(stmts); i++)
         co_compile_stmt(co, stmts[i]);

@@ -8,6 +8,7 @@ SRCS = \
 	$(wildcard $(SRC_DIR)/parser/*.c) \
 	$(wildcard $(SRC_DIR)/utils/*.c) \
 	$(wildcard $(SRC_DIR)/diag/*.c) \
+	$(wildcard $(SRC_DIR)/vm/builtins/*.c) \
 	$(wildcard $(SRC_DIR)/vm/objects/*.c) \
 	$(wildcard $(SRC_DIR)/vm/*.c) \
 

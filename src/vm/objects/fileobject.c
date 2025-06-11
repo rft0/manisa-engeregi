@@ -8,7 +8,7 @@
 #include "strobject.h"
 
 
-MEObject* file_new(FILE* file, const char* filename, const char* mode) {
+MEObject* me_file_new(FILE* file, const char* filename, const char* mode) {
     MEFileObject* obj = malloc(sizeof(MEFileObject));
     obj->ob_type = &me_file_type;
     obj->ob_file = file;

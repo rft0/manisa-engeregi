@@ -19,12 +19,18 @@ MEObject* me_io_print(MEObject* self, MEObject** args) {
     }
 
     if (!me_str_check(args[0])) {
-        me_set_error(me_error_typemismatch, "print() expects a string argument");
-        return NULL;
+        if (ME_TYPE(args[0])->tp_str) {
+            MEStrObject* str_obj = (MEStrObject*)ME_TYPE(args[0])->tp_str(args[0]);
+            printf("%.*s\n", (int)str_obj->ob_bytelength, str_obj->ob_value);
+            return me_none;
+        } else {
+            me_set_error(me_error_typemismatch, "print() expects a string argument");
+            return NULL;
+        }
     }
 
     MEStrObject* str_obj = (MEStrObject*)args[0];
-    printf("%.*s", (int)str_obj->ob_bytelength, str_obj->ob_value);
+    printf("%.*s\n", (int)str_obj->ob_bytelength, str_obj->ob_value);
     
     return me_none;
 }
