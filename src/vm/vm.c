@@ -7,6 +7,7 @@
 
 #include "co.h"
 
+#include "objects/builtinfnobject.h"
 #include "objects/functionobject.h"
 #include "objects/errorobject.h"
 #include "objects/boolobject.h"
@@ -101,7 +102,6 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                     return MEVM_EXIT_ERROR;
                 }
 
-                printf("%s\n", ME_TYPE_NAME(vm->co->co_globals[idx]));
                 vm->co->co_globals[idx] = POP(vm);
                 break;
             }
@@ -505,22 +505,30 @@ MEObject* me_unary_op(MEObject* obj, UnaryOp op) {
 }
 
 MEVMExitCode me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uint8_t arg_count) {
-    if (!me_function_check(func_obj)) {
-        me_set_error(me_error_typemismatch, "Object is not callable: \"%s\".", ME_TYPE_NAME(func_obj));
-        return NULL;
+    if (me_function_check(func_obj)) {
+        MEFunctionObject* func = (MEFunctionObject*)func_obj;
+        if (arg_count != func->nargs) {
+            me_set_error(me_error_generic, "Function \"%s\" expects %u arguments, got %u.", func->co->co_name, func->nargs, arg_count);
+            return MEVM_EXIT_ERROR;
+        }
+    
+        MEVM* func_vm = me_vm_new(func->co);
+        vm->parent = vm;
+    
+        MEVMExitCode exit = me_vm_run(vm);
+        me_vm_free(func_vm);
+        return exit;
+    } else if (me_builtinfn_check(func_obj)) {
+        MEObject* result = ((MEBuiltinFnObject*)func_obj)->fn(func_obj, args);
+        if (!result) // In case of NULL error must be set by the function itself
+            return MEVM_EXIT_ERROR;
+
+        PUSH(vm, result);
+        return MEVM_EXIT_OK;
     }
 
-    MEFunctionObject* func = (MEFunctionObject*)func_obj;
-    if (arg_count != func->nargs) {
-        me_set_error(me_error_generic, "Function \"%s\" expects %u arguments, got %u.", func->co->co_name, func->nargs, arg_count);
-        return MEVM_EXIT_ERROR;
-    }
 
-    MEVM* func_vm = me_vm_new(func->co);
-    vm->parent = vm;
-
-    MEVMExitCode exit = me_vm_run(vm);
-    me_vm_free(func_vm);
-    return exit;
+    me_set_error(me_error_typemismatch, "Object is not callable: \"%s\".", ME_TYPE_NAME(func_obj));
+    return NULL;
 }
 

@@ -1,6 +1,5 @@
 #include "functionobject.h"
 
-#include "noneobject.h"
 #include "boolobject.h"
 #include "errorobject.h"
 
@@ -20,16 +19,16 @@ MEObject* me_function_new(MECodeObject* co, size_t nargs) {
     return (MEObject*)obj;
 }
 
+static void function_dealloc(MEObject* obj) {
+    free(obj);
+}
+
 static MEObject* function_str(MEObject* obj) {
     return me_str_from_str(((MEFunctionObject*)obj)->co->co_name);
 }
 
 static MEObject* function_bool(MEObject* obj) {
     return me_true;
-}
-
-static MEObject* function_call(MEObject* obj, MEObject** args, size_t nargs) {
-    return me_none;
 }
 
 static MEObject* function_cmp(MEObject* v, MEObject* w, MECmpOp op) {
@@ -49,10 +48,10 @@ METypeObject me_type_function = {
     .tp_name = "function",
     .tp_base = NULL,
     .tp_sizeof = sizeof(MEFunctionObject),
-    .tp_dealloc = NULL,
+    .tp_dealloc = (fn_destructor)function_dealloc,
     .tp_str = (fn_str)function_str,
     .tp_bool = (fn_bool)function_bool,
-    .tp_call = (fn_call)function_call,
+    .tp_call = NULL,
 
     .tp_nb_add = NULL,
     .tp_nb_sub = NULL,

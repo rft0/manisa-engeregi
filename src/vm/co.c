@@ -14,6 +14,8 @@
 #include "objects/noneobject.h"
 #include "objects/strobject.h"
 
+#include "builtins/builtin.h"
+
 #define ME_CO_INITIAL_CAPACITY 256
 
 // NOTE: MOVING THIS IN OP/OPERAND CREATOR FUNCTIONS MAY BE BETTER
@@ -584,6 +586,8 @@ MECodeObject* co_new(const char* filename, Stmt** stmts) {
     co->loop_end_jump = 0;
     co->loop_end_pos = 0;
     co->break_patches = darray_new(uint32_t);
+
+    me_register_builtins(co);
 
     for (size_t i = 0; i < darray_size(stmts); i++)
         co_compile_stmt(co, stmts[i]);
