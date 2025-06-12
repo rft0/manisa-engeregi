@@ -19,17 +19,22 @@
 #include "vm/vm.h"
 
 int main(int argc, char *argv[]) {
-#ifndef ME_DEBUG
-    // COMMAND LINE HANDLING WILL BE DONE IN SEPERATE FILE LASTLY DO NOT ADD THINGS LIKE THAT HERE.
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <source_file>\n", argv[0]);
-        return 1;
-    }
+// #ifndef ME_DEBUG
+//     // COMMAND LINE HANDLING WILL BE DONE IN SEPERATE FILE LASTLY DO NOT ADD THINGS LIKE THAT HERE.
+//     if (argc < 2) {
+//         fprintf(stderr, "Usage: %s <source_file>\n", argv[0]);
+//         return 1;
+//     }
 
-    const char* filename = argv[1];
-#else
-    const char* filename = "deneme.me"; // For now let's assume "filename" is both utf-8 and null terminated string
-#endif
+//     const char* filename = argv[1];
+// #else
+//     const char* filename = "deneme.me"; // For now let's assume "filename" is both utf-8 and null terminated string
+// #endif
+
+    // NEVERMIND I AM TIRED TO IMPLEMENT COMPLEX COMMAND LINE HANDLING
+    const char* filename = "deneme.me"; // Default fallback if no args given.
+    if (argc >= 2)
+        filename = argv[1];
 
     char* src = read_file_binary(filename, NULL);
     if (!src) {

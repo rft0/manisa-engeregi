@@ -19,12 +19,12 @@ OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 INC_FLAGS = -I$(SRC_DIR)/include
 
 TARGET_DIR = bin
-TARGET_BIN = out
+TARGET_BIN = me
 TARGET = $(TARGET_DIR)/$(TARGET_BIN)
 
 LDLIBS = -lm
 
-all: $(TARGET) run
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	@mkdir -p $(TARGET_DIR)
