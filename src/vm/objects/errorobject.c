@@ -8,7 +8,7 @@
 #define MAX_ERROR_MSG_LEN 256
 
 static struct {
-    const char error_msg[MAX_ERROR_MSG_LEN];
+    const char *error_msg[MAX_ERROR_MSG_LEN];
     MEObject* error_obj;
 } me_global_error = {NULL, NULL}; 
 
