@@ -1,0 +1,11 @@
+marifet faktöriyel(n) {
+    şayet (n == 0) {
+        tebliğ 1;
+    }
+
+    tebliğ n * faktöriyel(n - 1);
+}
+
+# We try to add "cümle" + "tamsayi" without typecasting result so
+# it will raise a type mismatch error. 
+çıktı("Sonuç: " + faktöriyel(5));

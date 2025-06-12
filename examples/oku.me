@@ -1,0 +1,11 @@
+# Opens a file handle.
+
+# Note: file path depends on current working directory.
+# Assuming this file is executed as "bin/me examples/oku.me"
+sabit dosya_handle = aç("examples/test.txt", "r");
+# Second argument means how many bytes to read from stream, -1 all .
+sabit içerik = oku(dosya_handle, -1);
+# Closes a file handle.
+kapat(dosya_handle);
+
+çıktı(içerik);
