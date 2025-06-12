@@ -13,6 +13,8 @@
 #include "objects/boolobject.h"
 #include "object.h"
 
+#define MAX_RECURSION_DEPTH 1024
+
 #define TOP(vm) ((vm)->stack[(vm)->sp - 1])
 // #define POP(vm) (darray_pop((vm)->stack), (vm)->sp--, TOP(vm))
 #define POP(vm) ({ MEObject* obj = TOP(vm); darray_pop((vm)->stack); (vm)->sp--; obj; })
@@ -41,14 +43,15 @@ MEVM* me_vm_new(MECodeObject* co) {
     vm->stack = darray_new(MEObject*);
     vm->ip = 0;
     vm->sp = 0;
+    vm->depth = 0;
 
     return vm;
 }
 
 MEVMExitCode me_vm_run(MEVM* vm) {
     while (vm->ip < vm->co->co_size) {
-        // printf("%04u\n", vm->ip);
-    
+        // printf("%04u: \n", vm->ip);
+
         MECodeOp op = vm->co->co_bytecode[vm->ip++];
         switch (op) {
             case CO_OP_NOP:
@@ -60,6 +63,7 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 }
 
                 MEObject* o = POP(vm);
+                ME_DECREF(o);
                 break;
             }
             case CO_OP_DUP: {
@@ -68,29 +72,36 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                     return MEVM_EXIT_ERROR;
                 }
 
-                MEObject* top = TOP(vm);
-                PUSH(vm, top);
+                MEObject* o = TOP(vm);
+                PUSH(vm, o);
+                ME_INCREF(o);
                 break;
             }
             case CO_OP_LOAD_CONST: {
                 uint16_t idx = *(uint16_t*)(vm->co->co_bytecode + vm->ip);
                 vm->ip += 2;
 
-                PUSH(vm, vm->co->co_consts[idx]);
+                MEObject* o = vm->co->co_consts[idx];
+                PUSH(vm, o);
+                ME_INCREF(o);
                 break;
             }
             case CO_OP_LOAD_GLOBAL: {
                 uint16_t idx = *(uint16_t*)(vm->co->co_bytecode + vm->ip);
                 vm->ip += 2;
                 
-                PUSH(vm, vm->co->co_globals[idx]);
+                MEObject* o = vm->co->co_globals[idx];
+                PUSH(vm, o);
+                ME_INCREF(o);
                 break;
             }
             case CO_OP_LOAD_VARIABLE: {
                 uint16_t idx = *(uint16_t*)(vm->co->co_bytecode + vm->ip);
                 vm->ip += 2;
 
-                PUSH(vm, vm->co->co_locals[idx]);
+                MEObject* o = vm->co->co_locals[idx];
+                PUSH(vm, o);
+                ME_INCREF(o);
                 break;
             }
             case CO_OP_STORE_GLOBAL: {
@@ -102,7 +113,10 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                     return MEVM_EXIT_ERROR;
                 }
 
-                vm->co->co_globals[idx] = POP(vm);
+                MEObject* value = POP(vm);
+                ME_XDECREF(vm->co->co_globals[idx]);
+                vm->co->co_globals[idx] = value;
+                ME_INCREF(value);
                 break;
             }
             case CO_OP_STORE_VARIABLE: {
@@ -114,7 +128,10 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                     return MEVM_EXIT_ERROR;
                 }
 
-                vm->co->co_locals[idx] = POP(vm);
+                MEObject* value = POP(vm);
+                ME_XDECREF(vm->co->co_locals[idx]);
+                vm->co->co_locals[idx] = value;
+                ME_INCREF(value);
                 break;
             }
             case CO_OP_BINARY_OP: {
@@ -129,10 +146,15 @@ MEVMExitCode me_vm_run(MEVM* vm) {
 
                 uint8_t op = vm->co->co_bytecode[vm->ip++];
                 MEObject* result = me_binary_op(lhs, rhs, op);
+
+                ME_XDECREF(lhs);
+                ME_XDECREF(rhs);
+
                 if (!result)
                     return MEVM_EXIT_ERROR;
 
                 PUSH(vm, result);
+                ME_INCREF(result);
                 break;
             }
             case CO_OP_UNARY_OP: {
@@ -144,10 +166,12 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 MEObject* obj = POP(vm);
                 uint8_t op = vm->co->co_bytecode[vm->ip++];
                 MEObject* result = me_unary_op(obj, op);
+                ME_XDECREF(obj);
                 if (!result)
                     return MEVM_EXIT_ERROR;
 
                 PUSH(vm, result);
+                ME_INCREF(result);
                 break;
             }
             case CO_OP_CALL_FUNCTION: {
@@ -162,13 +186,16 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                     darray_pushd(args, POP(vm));
 
                 MEObject* func_obj = POP(vm);
+                ME_INCREF(func_obj);
                 MEVMExitCode result = me_function_call(vm, func_obj, args, arg_count);
+
+                darray_for(args) ME_XDECREF(args[__i]);
                 darray_free(args);
+                ME_XDECREF(func_obj);
 
                 if (result != MEVM_EXIT_OK)
                     return result;
 
-                // Result of the function is pushed to stack by child
                 break;
             }
             case CO_OP_RETURN: {
@@ -178,11 +205,14 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 }
 
                 MEObject* return_value = POP(vm);
-                if (vm->parent)
+                if (vm->parent) {
                     PUSH(vm->parent, return_value);
+                    // ME_INCREF(return_value);  // We need to increment here because the parent VM now owns a reference
+                } else {
+                    ME_XDECREF(return_value);
+                }
 
                 return MEVM_EXIT_OK;
-                break;
             }
             case CO_OP_JUMP_IF_FALSE: {
                 uint16_t jump_if_false_offset = *(uint16_t*)(vm->co->co_bytecode + vm->ip);
@@ -194,9 +224,11 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 }
 
                 MEObject* condition = POP(vm);
-                if (!me_is_true(condition)) {
+                int is_true = me_is_true(condition);
+                ME_XDECREF(condition);
+                
+                if (!is_true)
                     vm->ip += jump_if_false_offset;
-                }
 
                 break;
             }
@@ -217,6 +249,7 @@ MEVMExitCode me_vm_run(MEVM* vm) {
 }
 
 void me_vm_free(MEVM* vm) {
+    darray_for(vm->stack) ME_XDECREF(vm->stack[__i]);
     darray_free(vm->stack);
     if (!vm->parent)
         co_free(vm->co);
@@ -517,12 +550,29 @@ MEVMExitCode me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uin
         }
     
         MEVM* func_vm = me_vm_new(func->co);
+        func_vm->co->co_globals = vm->co->co_globals;
         func_vm->parent = vm;
+        func_vm->depth = vm->depth + 1;
 
-        for (int i = 0; i < arg_count; i++)
-            func_vm->co->co_locals[i] = args[arg_count - 1 - i];
+        // if (vm->co->co_globals) {
+        // for (int i = 0; i < darray_size(vm->co->co_globals); i++) {
+        //     if (vm->co->co_globals[i]) {
+        //         ME_INCREF(vm->co->co_globals[i]);
+        //     }
+        // }
+
+        for (int i = 0; i < arg_count; i++) {
+            // MEObject* arg = args[arg_count - 1 - i];
+            MEObject* arg = args[i];
+            ME_INCREF(arg);
+            func_vm->co->co_locals[i] = arg;
+        }
 
         MEVMExitCode exit = me_vm_run(func_vm);
+
+        // if (func_vm->co->co_globals == vm->co->co_globals)
+        //     func_vm->co->co_globals = NULL;
+
         me_vm_free(func_vm);
         return exit;
     } else if (me_builtinfn_check(func_obj)) {
@@ -531,6 +581,7 @@ MEVMExitCode me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uin
             return MEVM_EXIT_ERROR;
 
         PUSH(vm, result);
+        ME_INCREF(result);
 
         return MEVM_EXIT_OK;
     }

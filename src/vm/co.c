@@ -212,12 +212,12 @@ static void co_compile_expr(MECodeObject* co, Expr* expr) {
             break;
         }
         case EXPR_CALL: {
-            if (hashmap_get(co->co_h_locals, expr->call->name.data, expr->call->name.byte_len, NULL)) {
-                hashmap_get(co->co_h_locals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx);
-                co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, idx, 2);
-            } else if (hashmap_get(co->co_h_globals, expr->call->name.data, expr->call->name.byte_len, NULL)) {
+            if (hashmap_get(co->co_h_globals, expr->call->name.data, expr->call->name.byte_len, NULL)) {
                 hashmap_get(co->co_h_globals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx);
                 co_bc_opoperand(co, CO_OP_LOAD_GLOBAL, idx, 2);
+            } else if (hashmap_get(co->co_h_locals, expr->call->name.data, expr->call->name.byte_len, NULL)) {
+                hashmap_get(co->co_h_locals, expr->call->name.data, expr->call->name.byte_len, (uintptr_t*)&idx);
+                co_bc_opoperand(co, CO_OP_LOAD_VARIABLE, idx, 2);
             }
 
             lnotab_forward(co, 3, expr->line);
@@ -335,7 +335,7 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
             func_co->co_h_globals = co->co_h_globals;
             func_co->co_h_locals = hashmap_new();
             func_co->co_consts = darray_new(MEObject*);
-            func_co->co_globals = darray_new(MEObject*);
+            func_co->co_globals = co->co_globals;
             func_co->co_locals = darray_new(MEObject*);
             darray_pushd(func_co->co_consts, me_none);
             darray_pushd(func_co->co_consts, me_long_from_long(1));
@@ -345,6 +345,17 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
             memset(func_co->co_bytecode, 0, func_co->co_capacity);
             func_co->co_size = 0;
             func_co->in_function = 1;
+
+            uintptr_t name_idx;
+            if (!co->in_function) {
+                if (hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
+                    hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
+                } else {
+                    name_idx = darray_size(co->co_globals);
+                    hashmap_set(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t)name_idx);
+                    darray_pushd(co->co_globals, me_none);
+                }
+            }
             
             for (size_t i = 0; i < darray_size(stmt->function_decl->params); i++) {
                 Expr* param = stmt->function_decl->params[i];
@@ -371,21 +382,11 @@ static void co_compile_stmt(MECodeObject* co, Stmt* stmt) {
             
             co_bc_opoperand(co, CO_OP_LOAD_CONST, func_idx, 2);
             lnotab_forward(co, 3, stmt->line);
-            // co_bc_opoperand(co, CO_OP_MAKE_FUNCTION, darray_size(stmt->function_decl->params), 1);
-            // lnotab_forward(co, 2, stmt->line);
-            
-            // ADD FUNCTION TO ITS LOCALS FOR RECURSIVE CALLS
-            uintptr_t name_idx;
+        
+            // Fix: Remove the duplicate variable declaration and reuse name_idx
             if (!co->in_function) {
-                if (hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
-                    hashmap_get(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
-                } else {
-                    name_idx = darray_size(co->co_globals);
-                    hashmap_set(co->co_h_globals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t)name_idx);
-                    darray_pushd(co->co_globals, me_none);
-                }
                 co_bc_opoperand(co, CO_OP_STORE_GLOBAL, name_idx, 2);
-            } else { // This is not allowed and code should never reach here for now, I will  handle this after adding an hashmap like object to runtime objects
+            } else {
                 if (hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, NULL)) {
                     hashmap_get(co->co_h_locals, stmt->function_decl->name.data, stmt->function_decl->name.byte_len, (uintptr_t*)&name_idx);
                 } else {
@@ -603,9 +604,16 @@ void co_free(MECodeObject* co) {
 
     hashmap_free(co->co_h_globals);
     hashmap_free(co->co_h_locals);
+
+    darray_for(co->co_consts) ME_XDECREF(co->co_consts[__i]);
     darray_free(co->co_consts);
+
+    darray_for(co->co_globals) ME_XDECREF(co->co_globals[__i]);
     darray_free(co->co_globals);
+
+    darray_for(co->co_locals) ME_XDECREF(co->co_locals[__i]);
     darray_free(co->co_locals);
+
     darray_free(co->co_lnotab);
 
     if (co->co_bytecode)

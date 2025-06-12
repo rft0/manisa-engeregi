@@ -41,6 +41,8 @@ MEObject* me_builtinfn_new(const char* name, MEBuiltinFunction fn) {
     }
     
     obj->ob_type = &me_type_builtinfn;
+    obj->ob_refcount = 1; // Initial reference count
+
     obj->ob_name = name;
     obj->fn = fn;
 

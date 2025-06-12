@@ -17,10 +17,10 @@
 #define ME_BUILTIN_IO_WRITE     "yaz"
 #define ME_BUILTIN_IO_FLUSH     "temizle"
 
-#define ME_BUILTIN_CAST_INT      "int"
-#define ME_BUILTIN_CAST_FLOAT    "float"
-#define ME_BUILTIN_CAST_STR      "str"
-#define ME_BUILTIN_CAST_BOOL     "bool"
+#define ME_BUILTIN_CAST_INT      "tamsayı"
+#define ME_BUILTIN_CAST_FLOAT    "ondalık"
+#define ME_BUILTIN_CAST_STR      "cümle"
+#define ME_BUILTIN_CAST_BOOL     "doğruluk"
 
 #define REGISTER_BUILTIN_CO(co, name, func) do { \
     uintptr_t idx = darray_size((co)->co_globals); \

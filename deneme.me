@@ -25,14 +25,15 @@
 # kapat(dosya_handle);
 
 # çıktı(içerik);
-
-değişken a = 1;
-madem (1) {
-    çıktı(1 + 1.5);
-    çıktı(a + 1 + 1.5 + "5");
-    şayet (a == 5) {
-        yeter;
+marifet fib(n) {
+    çıktı(n);
+    şayet (n <= 0) {
+        tebliğ 0;
+    } değilse şayet (n == 1) {
+        tebliğ 1;
     }
-    
-    a++;
+
+    tebliğ fib(n - 1) + fib(n - 2);
 }
+
+çıktı(fib(4));

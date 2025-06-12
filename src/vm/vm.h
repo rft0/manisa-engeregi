@@ -11,6 +11,7 @@ typedef struct _MEVM {
 
     uint32_t ip;
     uint32_t sp;
+    uint32_t depth;
 } MEVM;
 
 typedef enum {
