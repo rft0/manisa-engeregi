@@ -10,7 +10,7 @@
 static struct {
     const char error_msg[MAX_ERROR_MSG_LEN];
     MEObject* error_obj;
-} me_global_error = {NULL, NULL}; 
+} me_global_error = {{0}, NULL}; 
 
 METypeObject me_type_error_generic;
 METypeObject me_type_error_divisionbyzero;
