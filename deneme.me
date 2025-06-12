@@ -26,14 +26,31 @@
 
 # çıktı(içerik);
 marifet fib(n) {
-    çıktı(n);
+    çıktı("n1: " + cümle(n));
     şayet (n <= 0) {
         tebliğ 0;
+        çıktı("n2: " + cümle(n));
     } değilse şayet (n == 1) {
         tebliğ 1;
     }
 
-    tebliğ fib(n - 1) + fib(n - 2);
+    çıktı("-----------------");
+    çıktı("n after base check: " + cümle(n));
+    sabit a = fib(n - 1);
+    çıktı("a value: " + cümle(a));
+    sabit b = fib(n - 2);
+    çıktı("b value: " + cümle(b));
+    çıktı("-----------------");
+    tebliğ b + a;
 }
 
-çıktı(fib(4));
+marifet faktöriyel(n) {    
+    şayet (n <= 1) {
+        tebliğ 1;
+    }
+    
+    tebliğ n * faktöriyel(n - 1);
+}
+
+çıktı("5! = " + cümle(faktöriyel(5)));
+

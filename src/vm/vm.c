@@ -50,8 +50,6 @@ MEVM* me_vm_new(MECodeObject* co) {
 
 MEVMExitCode me_vm_run(MEVM* vm) {
     while (vm->ip < vm->co->co_size) {
-        // printf("%04u: \n", vm->ip);
-
         MECodeOp op = vm->co->co_bytecode[vm->ip++];
         switch (op) {
             case CO_OP_NOP:
@@ -207,11 +205,12 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                 MEObject* return_value = POP(vm);
                 if (vm->parent) {
                     PUSH(vm->parent, return_value);
-                    // ME_INCREF(return_value);  // We need to increment here because the parent VM now owns a reference
+                    ME_INCREF(return_value);  // We need to increment here because the parent VM now owns a reference
                 } else {
                     ME_XDECREF(return_value);
                 }
 
+                vm->ip = vm->co->co_size;
                 return MEVM_EXIT_OK;
             }
             case CO_OP_JUMP_IF_FALSE: {
@@ -223,6 +222,7 @@ MEVMExitCode me_vm_run(MEVM* vm) {
                     return MEVM_EXIT_ERROR;
                 }
 
+                
                 MEObject* condition = POP(vm);
                 int is_true = me_is_true(condition);
                 ME_XDECREF(condition);
@@ -553,13 +553,6 @@ MEVMExitCode me_function_call(MEVM* vm, MEObject* func_obj, MEObject** args, uin
         func_vm->co->co_globals = vm->co->co_globals;
         func_vm->parent = vm;
         func_vm->depth = vm->depth + 1;
-
-        // if (vm->co->co_globals) {
-        // for (int i = 0; i < darray_size(vm->co->co_globals); i++) {
-        //     if (vm->co->co_globals[i]) {
-        //         ME_INCREF(vm->co->co_globals[i]);
-        //     }
-        // }
 
         for (int i = 0; i < arg_count; i++) {
             // MEObject* arg = args[arg_count - 1 - i];
